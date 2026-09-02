@@ -11,8 +11,14 @@ const PASSWORD = process.env.PREVIEW_PASSWORD ?? "preview2026";
 // Allow turning the gate off entirely via env without touching code.
 const DISABLED = process.env.PREVIEW_AUTH_DISABLED === "true";
 
+// Never prompt during local development.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
+
 export function proxy(request: NextRequest) {
   if (DISABLED) return NextResponse.next();
+
+  const host = request.nextUrl.hostname;
+  if (LOCAL_HOSTS.has(host)) return NextResponse.next();
 
   const header = request.headers.get("authorization");
 
