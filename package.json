@@ -10,6 +10,7 @@
     "backup": "bash scripts/backup.sh",
     "import:supabase": "npx tsx scripts/import-to-supabase.ts",
     "backup:supabase": "npx tsx scripts/backup-supabase.ts",
+    "clear:orders": "npx tsx scripts/clear-orders.ts",
     "admin:set": "npx tsx scripts/set-admin.ts",
     "admin:list": "npx tsx scripts/admin-users.ts list",
     "admin:add": "npx tsx scripts/admin-users.ts add",
