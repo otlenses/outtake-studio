@@ -89,12 +89,13 @@ export function createSupabaseStore(backend: Backend): Store {
       const wantCollections = ARRAY_COLLECTIONS.filter((c) => !only || only.includes(c));
       const wantSettings = SETTING_KEYS.filter((k) => !only || only.includes(k));
 
-      const [meta, settingRows, recordRows] = await Promise.all([
-        backend.fetchSettings([META_KEY]),
-        backend.fetchSettings([...wantSettings]),
+      // two requests, in parallel: the settings rows (incl. the "meta" marker) and the records
+      const [settingsAndMeta, recordRows] = await Promise.all([
+        backend.fetchSettings([META_KEY, ...wantSettings]),
         backend.fetchRecords([...wantCollections]),
       ]);
-      if (meta.length === 0) return null; // brand-new database
+      if (!settingsAndMeta.some((r) => r.key === META_KEY)) return null; // brand-new database
+      const settingRows = settingsAndMeta.filter((r) => r.key !== META_KEY);
 
       const db: AnyDb = {};
       const snap: Snapshot = {

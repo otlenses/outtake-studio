@@ -489,13 +489,13 @@ export async function findAdminByEmail(email: string): Promise<AdminUser | null>
 }
 
 export async function listOrders(): Promise<OrderRequest[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["orders"]);
   // Oldest first by default, so nothing submitted early gets missed/forgotten.
   return [...db.orders].sort((a, b) => (a.submittedAt > b.submittedAt ? 1 : -1));
 }
 
 export async function getOrder(id: string): Promise<OrderRequest | null> {
-  const db = await ensureDb();
+  const db = await ensureDb(["orders"]);
   return db.orders.find((o) => o.id === id) ?? null;
 }
 
@@ -625,12 +625,12 @@ export async function changeOrderStatus(
 }
 
 export async function listEnquiries(): Promise<Enquiry[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["enquiries"]);
   return [...db.enquiries].sort((a, b) => (a.submittedAt > b.submittedAt ? 1 : -1));
 }
 
 export async function getEnquiry(id: string): Promise<Enquiry | null> {
-  const db = await ensureDb();
+  const db = await ensureDb(["enquiries"]);
   return db.enquiries.find((e) => e.id === id) ?? null;
 }
 
@@ -977,12 +977,12 @@ export async function updatePaymentSettings(
 // ---------------------------------------------------------------------------
 
 export async function listMerchOrders(): Promise<MerchOrder[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["merchOrders"]);
   return [...db.merchOrders].sort((a, b) => (a.submittedAt > b.submittedAt ? 1 : -1));
 }
 
 export async function getMerchOrder(id: string): Promise<MerchOrder | null> {
-  const db = await ensureDb();
+  const db = await ensureDb(["merchOrders"]);
   return db.merchOrders.find((o) => o.id === id) ?? null;
 }
 
