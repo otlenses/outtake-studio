@@ -98,7 +98,7 @@ export default function Hero() {
               <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.35em] text-signal">
                 Production &amp; Camera Rental House
               </p>
-              <h1 className="font-display text-3xl font-black leading-[1.05] tracking-tight sm:text-4xl md:text-5xl">
+              <h1 className="banner-title font-display text-3xl font-black leading-[1.05] tracking-tight sm:text-4xl md:text-5xl">
                 Visual Storytelling &amp; Precision Production
               </h1>
               <p className="mt-4 max-w-sm text-sm text-white/45 md:text-base">

@@ -1,12 +1,17 @@
 import ScrollReveal from "./ScrollReveal";
+import Breadcrumb from "@/components/Breadcrumb";
+import AnimatedHeading from "./AnimatedHeading";
 
 export default function AboutIntro() {
   return (
     <section className="bg-paper px-[max(1.5rem,4vw)] pt-20 md:pt-28">
       <ScrollReveal className="mx-auto">
-        <h1 className="font-display text-3xl font-black uppercase tracking-tight md:text-4xl">
-          About Us
-        </h1>
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "About Us" }]} />
+        <AnimatedHeading
+          as="h1"
+          text="About Us"
+          className="page-title font-display text-3xl font-black tracking-tight md:text-4xl"
+        />
         <p className="mt-5 max-w-2xl text-sm text-ash md:text-base">
           Out Take Studio is a Kuala Lumpur-based production house and camera
           rental house. We partner with brands, agencies, and fellow

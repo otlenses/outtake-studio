@@ -12,7 +12,7 @@ export default function BrowseCategory() {
             <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.3em] text-ash">
               The Full Floor
             </p>
-            <h2 className="font-display text-3xl font-black uppercase tracking-tight md:text-4xl">
+            <h2 className="font-display text-3xl font-black tracking-tight md:text-4xl">
               Browse by Category
             </h2>
           </div>
@@ -33,7 +33,7 @@ export default function BrowseCategory() {
                 className="object-cover opacity-80 transition-transform duration-500 group-hover:scale-105 group-hover:opacity-60"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <span className="absolute bottom-4 left-4 font-display text-lg font-bold uppercase tracking-tight text-white">
+              <span className="absolute bottom-4 left-4 font-display text-lg font-bold tracking-tight text-white">
                 {cat.title}
               </span>
             </Link>
@@ -48,7 +48,7 @@ export default function BrowseCategory() {
           <a
             href="/Gear-List.pdf"
             download
-            className="shrink-0 rounded-full bg-signal px-6 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink transition-transform hover:scale-105"
+            className="shrink-0 rounded-full bg-signal px-6 py-3 font-mono text-sm font-semibold tracking-[0.02em] text-ink transition-transform hover:scale-105"
           >
             Download Full Gear List (PDF)
           </a>

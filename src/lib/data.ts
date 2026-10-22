@@ -1,28 +1,73 @@
+export const WHATSAPP_NUMBER = "601126860255";
+
+export type MerchItem = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  images?: string[];
+  description: string;
+  shippingInfo: string;
+};
+
+export const MERCH_SIZES = ["S", "M", "L", "XL", "XXL"] as const;
+
+export const merchItems: MerchItem[] = [
+  {
+    id: "merch-1",
+    name: "Out Take Studio Classic Tee",
+    price: 89,
+    image: "/merch/merch-shirt-2.jpg",
+    description:
+      "Heavyweight cotton tee with the Out Take Studio wordmark. A simple everyday layer for anyone on set or off.",
+    shippingInfo:
+      "Orders ship within 3-5 business days across Malaysia. International shipping available on request. Unworn, unwashed items with tags attached may be exchanged within 14 days of delivery — reach out to us on WhatsApp to arrange an exchange.",
+  },
+];
+
+export function getMerchItem(id: string): MerchItem | undefined {
+  return merchItems.find((item) => item.id === id);
+}
+
+export function getMerchGallery(item: MerchItem): string[] {
+  return item.images && item.images.length > 0 ? item.images : [item.image];
+}
+
 export const services = [
   {
     code: "01",
     title: "Commercial Videography",
     blurb: "Brand films and ad campaigns shot to perform across broadcast and social.",
+    details:
+      "From concept development through final delivery, we produce commercial films built to perform across broadcast, streaming, and paid social. Our team handles casting, locations, and full crew logistics, with a colour and sound finish tailored to each platform's spec.",
   },
   {
     code: "02",
     title: "Corporate Videography",
     blurb: "Culture films, internal comms, and executive interviews with a polished, honest tone.",
+    details:
+      "We help companies tell their own story — culture and recruitment films, internal communications, town halls, and executive interviews — shot with a documentary sensibility and finished to a broadcast-grade polish that still feels human.",
   },
   {
     code: "03",
     title: "Photography + Digital Imaging",
     blurb: "Editorial, product, and campaign stills with full retouch and colour pipeline.",
+    details:
+      "Our stills team covers editorial, product, and campaign photography with an in-house retouch and colour pipeline, so every image ships consistent with your brand guidelines and ready for print or digital use straight out of delivery.",
   },
   {
     code: "04",
     title: "Cinematography",
     blurb: "DP services for music videos, features, and narrative work — camera to colour.",
+    details:
+      "We provide dedicated DP services for music videos, short and feature films, and narrative commercial work — from camera and lighting design on set through to the final colour grade, keeping one consistent creative eye across the whole image pipeline.",
   },
   {
     code: "05",
     title: "Equipment Rental",
     blurb: "Cinema cameras, glass, lighting, and grip — professionally maintained, ready to ship.",
+    details:
+      "Our rental floor stocks cinema camera bodies, cine and photo lenses, lighting, and grip — every unit professionally serviced and calibrated between bookings. Browse the full catalogue or talk to us about a custom package for your next shoot.",
   },
 ];
 
@@ -60,14 +105,27 @@ export function getWorkItem(id: string): WorkItem | undefined {
   return workItems.find((item) => item.id === id);
 }
 
+export const DEFAULT_GEAR_CATEGORIES = ["CAMERA", "LENS", "LIGHT", "GRIP"];
+
+export type GearSpecField = { label: string; value: string };
+
 export type GearItem = {
   id: string;
   name: string;
-  category: "CAMERA" | "LENS" | "LIGHT" | "GRIP";
+  category: string;
   brand: string;
   dailyRate: number;
   image: string;
+  images?: string[];
+  videoUrl?: string | null;
+  description?: string;
+  /** @deprecated replaced by specSections (migrated automatically) */
+  customSpecs?: GearSpecField[];
+  /** Admin-editable spec sections (title + one item per line) */
+  specSections?: PackageSpecSection[];
   isNew?: boolean;
+  /** Show this item in the home page rental carousel */
+  featuredOnHome?: boolean;
 };
 
 export const gearItems: GearItem[] = [
@@ -110,16 +168,15 @@ export type GalleryItem =
   | { type: "video"; src: string; poster: string };
 
 export function getGearGallery(item: GearItem): GalleryItem[] {
-  return [
-    { type: "image", src: item.image },
-    { type: "image", src: item.image },
-    { type: "image", src: item.image },
-    { type: "image", src: item.image },
-    { type: "video", src: "/media/hero-teaser.mp4", poster: item.image },
-  ];
+  const images = item.images && item.images.length > 0 ? item.images : [item.image];
+  const gallery: GalleryItem[] = images.map((src) => ({ type: "image", src }));
+  if (item.videoUrl) {
+    gallery.push({ type: "video", src: item.videoUrl, poster: images[0] });
+  }
+  return gallery;
 }
 
-const CATEGORY_OVERVIEWS: Record<GearItem["category"], string> = {
+const CATEGORY_OVERVIEWS: Record<string, string> = {
   CAMERA:
     "A professional-grade camera body trusted on commercial, narrative, and broadcast sets. Fully serviced and calibrated between every rental, with all standard accessories included.",
   LENS:
@@ -130,43 +187,22 @@ const CATEGORY_OVERVIEWS: Record<GearItem["category"], string> = {
     "Production-tested support gear built for long shoot days. Maintained to studio standards so it performs the same on set as it does in the shop.",
 };
 
+const DEFAULT_OVERVIEW =
+  "Professionally serviced and calibrated between every rental, ready to perform on set at Out Take Studio.";
+
 export function getGearOverview(item: GearItem): string {
-  return `The ${item.name} is part of our ${item.brand} lineup, available for daily rental at Out Take Studio. ${CATEGORY_OVERVIEWS[item.category]}`;
+  if (item.description?.trim()) return item.description;
+  const overview = CATEGORY_OVERVIEWS[item.category] ?? DEFAULT_OVERVIEW;
+  return `The ${item.name} is part of our ${item.brand} lineup, available for daily rental at Out Take Studio. ${overview}`;
 }
 
-export function getGearSpecs(item: GearItem): Record<string, string> {
-  const base: Record<string, string> = {
-    Brand: item.brand,
-    Category: item.category.charAt(0) + item.category.slice(1).toLowerCase(),
-    "Daily Rate": `RM ${item.dailyRate.toFixed(2)} / day`,
-    Condition: "Professionally serviced",
-    Availability: item.isNew ? "New arrival" : "In stock",
-  };
-
-  const byCategory: Record<GearItem["category"], Record<string, string>> = {
-    CAMERA: {
-      "Recording Format": "ProRes / RAW",
-      Mount: "PL / EF (kit dependent)",
-      Included: "Body, battery, charger, cage",
-    },
-    LENS: {
-      Mount: "PL / EF (confirm on booking)",
-      "Focus Type": "Manual, geared",
-      Included: "Front & rear caps, case",
-    },
-    LIGHT: {
-      Power: "AC / V-mount battery",
-      "Colour Temp": "Adjustable CCT",
-      Included: "Yoke, power cable, diffusion",
-    },
-    GRIP: {
-      Material: "Aircraft-grade aluminium",
-      "Load Capacity": "Production standard",
-      Included: "Case, mounting plates",
-    },
-  };
-
-  return { ...base, ...byCategory[item.category] };
+export function getGearSpecs(item: GearItem): GearSpecField[] {
+  const base: GearSpecField[] = [
+    { label: "Brand", value: item.brand },
+    { label: "Category", value: toTitleCase(item.category) },
+    { label: "Daily Rate", value: `RM ${item.dailyRate.toFixed(2)} / day` },
+  ];
+  return base;
 }
 
 export const categories = [
@@ -176,6 +212,8 @@ export const categories = [
   { id: "light", title: "Light", image: "/category/light.jpg" },
 ];
 
+export type PackageSpecSection = { title: string; items: string[] };
+
 export type PackageItem = {
   id: string;
   name: string;
@@ -183,6 +221,8 @@ export type PackageItem = {
   price: string;
   period: string;
   image: string;
+  images?: string[];
+  videoUrl?: string | null;
   featured?: boolean;
   /** Show this package in the home page's curated carousel */
   featuredOnHome?: boolean;
@@ -190,10 +230,8 @@ export type PackageItem = {
   features: string[];
   /** Longer marketing paragraph shown on the detail page */
   description: string;
-  /** Digital cinema camera kit contents */
-  included: string[];
-  battery: string[];
-  lensControl: string[];
+  /** Admin-editable spec sections, e.g. What's Included, Battery, Lens Control */
+  specSections: PackageSpecSection[];
 };
 
 export const packages: PackageItem[] = [
@@ -215,22 +253,24 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The Nikon ZR 6K Full Camera Package pairs a compact 6K cinema body with dual native ISO and R3D RAW recording, caged and ready to shoot. A lean, lightweight setup built for run-and-gun crews and one-camera productions that still need a full cinema pipeline.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x Nikon ZR 6K Cinema Camera Kit",
       "1x Tilta Cage",
       "2x 512GB CFAST Type B Card",
       "3x Battery w/ 1x dual charger",
       "1x E-mount Adapter",
       "1x EF-Mount Adapter or PL-Mount Adapter",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "4x SWIT 135wh Compact V-Mount",
       "4x SWIT 99wh Compact V-Mount",
       "1x 2-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -251,7 +291,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The Sony FX5 Full Camera Package delivers full-frame 5K open-gate recording with triple native ISO and 15 stops of dynamic range. A go-to setup for commercial, corporate, and music video shoots that need high frame rates without sacrificing low-light performance.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x Sony FX5 Cinema Camera Kit",
       "1x Tilta Full Cage w/ Top Handle, Dovetail plate",
       "2x 240GB CFA Card",
@@ -259,15 +300,16 @@ export const packages: PackageItem[] = [
       "3x Sony NP-SA100 Battery w/ 1x Dual Charger",
       "1x V-mount Battery Plate",
       "1x Mofage Poco II Drop-in Filter Adapter w/ V-ND (PL & EF)",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "4x SWIT 140wh Compact V-Mount",
       "6x SWIT 99wh Compact V-Mount",
       "1x 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -290,7 +332,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The Kinefinity Mavo LF Full Camera Package brings large-format 6K imaging into a body weighing just over a kilogram. Arri Alexa colour science and ProRes 4444XQ make it a favourite for narrative and documentary crews who need cinema-grade colour in a mount-agnostic, travel-friendly form factor.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x Kinefinity Mavo Edge 6K Cinema Camera",
       "3x 1TB SSD Card",
       "1x Movcam KineKIT Edge Kit and Sliding Dove Plate Kit",
@@ -299,15 +342,16 @@ export const packages: PackageItem[] = [
       "1x E-Mount",
       "1x PL-Mount",
       "1x EF-Mount",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "6x SWIT 135wh Compact V-Mount",
       "6x SWIT 99wh Compact V-Mount",
       "1x 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -331,7 +375,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The Kinefinity Mavo Edge 6K Full Camera Package adds built-in ND to the Mavo platform's large-format 6K sensor and Arri-matched colour science. A modular, mount-adaptable body suited to narrative, commercial, and gimbal-heavy productions alike.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x Kinefinity Mavo Edge 6K Cinema Camera",
       "3x 1TB SSD Card",
       "1x Movcam KineKIT Edge Kit and Sliding Dove Plate Kit",
@@ -340,15 +385,16 @@ export const packages: PackageItem[] = [
       "1x E-Mount",
       "1x PL-Mount",
       "1x EF-Mount",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "6x SWIT 140wh Compact V-Mount",
       "6x SWIT 99wh Compact V-Mount",
       "1x 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -371,7 +417,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The DJI Ronin 4D 8K Full Camera Package is a fully integrated gimbal-camera system — no external stabilizer rigging required. With 4K120 full-frame capture, internal ND, and the 4D Flex head option, it's built for run-and-gun operators who need smooth, cinema-grade footage fast.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x DJI Ronin 4D-8K Cinema Camera Full Eco System Package",
       "3x 1TB PRO SSD",
       "1x DJI Ronin 4D Video Transmitter",
@@ -385,17 +432,18 @@ export const packages: PackageItem[] = [
       "1x DJI D-Tap to DC-IN Power Cable (0.5m)",
       "1x DJI Ronin 4D Hand Grips Mount Universal Adapter",
       "1x V-Mount Battery Plate",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "4x DJI TB50 Battery",
       "1x DJI TB50 Quad Charger",
       "6x SWIT 140wh Compact V-Mount",
       "6x SWIT 99wh Compact V-Mount",
       "1x 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -417,7 +465,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The Sony Venice 6K Full Camera Package is a flagship large-format cinema system built-in mechanical ND, dual native ISO, and full 16-bit linear RAW. The industry-standard choice for broadcast, feature, and high-end commercial productions.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x Sony Venice 6K Cinema Camera Kit",
       "1x Sony DVF-EL200 OLED Viewfinder",
       "1x Sony Venice EVF Cable - 21in/54cm",
@@ -429,15 +478,16 @@ export const packages: PackageItem[] = [
       "1x Wooden Camera D-Box V-Mount",
       "1x Wooden Camera A-Box",
       "1x AC Power Supply",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "4x SWIT 200wh Compact V-Mount",
       "8x SWIT 140wh Compact V-Mount",
       "1x SWIT 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -458,7 +508,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The Sony Venice 6K with Rialto Full Camera Package extends the flagship Venice 6K sensor block up to 5.5 metres from the camera body — ideal for gimbal, car, and tight-space setups where a full-size body can't fit, without giving up any large-format image quality.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x Sony Venice 6K Cinema Camera Kit",
       "1x Sony DVF-EL200 OLED Viewfinder",
       "1x Sony Venice EVF Cable - 21in/54cm",
@@ -472,15 +523,16 @@ export const packages: PackageItem[] = [
       "1x AC Power Supply",
       "1x Sony Rialto System with Tilta Cage",
       "1x Rialto Extension Cable",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "4x SWIT 200wh Compact V-Mount",
       "8x SWIT 140wh Compact V-Mount",
       "1x SWIT 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -500,7 +552,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The ARRI Alexa Mini LF Full Camera Package is the industry benchmark for large-format cinema colour and dynamic range. ARRIRAW and ProRes 4444XQ recording, built-in mechanical ND, and a compact LF body make it the top-tier choice for feature films and premium commercial work.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x ARRI Alexa Mini LF Kit",
       "3x Arri Codex Compact drive 1TB",
       "1x V-mount Power Splitting Box",
@@ -512,15 +565,16 @@ export const packages: PackageItem[] = [
       "1x PL to LPL Mount w/ built-in Speed Booster",
       "1x Power Cable",
       "4x Arri 19mm Stainless Steel Rod",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "6x SWIT 200wh Compact V-Mount",
       "8x SWIT 140wh Compact V-Mount",
       "1x SWIT 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M mark II Wireless Follow Focus kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
   {
@@ -541,7 +595,8 @@ export const packages: PackageItem[] = [
     ],
     description:
       "The RED V-Raptor 8K Full Camera Package pairs a full-frame 8K sensor with 17+ stops of dynamic range and built-in ND — ideal for high-speed commercial work, action sequences, and productions that need to reframe or deliver in multiple formats from a single 8K master.",
-    included: [
+    specSections: [
+      { title: "What's Included", items: [
       "1x RED V-Raptor 8K VV Cinema Camera Kit",
       "1x RED Cage w/ Top Handle",
       "3x RED PRO 1TB SSD",
@@ -549,15 +604,16 @@ export const packages: PackageItem[] = [
       "3x V-Lock Battery w/ 1x Dual Charger",
       "1x RF Mount",
       "1x PL Mount",
-    ],
-    battery: [
+    ] },
+      { title: "Battery", items: [
       "6x SWIT 140wh Compact V-Mount",
       "6x SWIT 99wh Compact V-Mount",
       "1x 4-Channel Fast Charge V-Mount Charger",
-    ],
-    lensControl: [
+    ] },
+      { title: "Lens Control", items: [
       "1x Tilta Nucleus-M Wireless Follow Focus Partial Kit",
       "with 1x Motor, 1x Hand Unit",
+    ] },
     ],
   },
 ];
@@ -567,5 +623,22 @@ export function getPackage(id: string): PackageItem | undefined {
 }
 
 export function getPackageGallery(pkg: PackageItem): string[] {
-  return [pkg.image, pkg.image, pkg.image];
+  return pkg.images && pkg.images.length > 0 ? pkg.images : [pkg.image, pkg.image, pkg.image];
+}
+
+/**
+ * Title-cases a string so acronyms display as words too:
+ * "Canon EOS R5 C Body" -> "Canon Eos R5 C Body".
+ */
+/** Product names: capitalise words that are all lowercase, leave ones that already have capitals (ZR, 6K, EOS) alone. */
+export function formatName(str: string): string {
+  return str.replace(/(^|[\s\-/(])([^\s\-/()]+)/g, (_m, sep: string, word: string) =>
+    sep + (/[A-Z]/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1))
+  );
+}
+
+export function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/(^|[\s\-/(])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
 }

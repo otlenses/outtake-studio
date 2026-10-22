@@ -3,7 +3,7 @@ import Nav from "@/components/Nav";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import ProductDetail from "@/components/ProductDetail";
-import { getGearItem } from "@/lib/data";
+import { getGearProduct } from "@/lib/server/db";
 
 export default async function ProductPage({
   params,
@@ -11,7 +11,7 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const item = getGearItem(id);
+  const item = await getGearProduct(id);
 
   if (!item) notFound();
 

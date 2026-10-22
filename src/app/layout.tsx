@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
 import { CartProvider } from "@/lib/cart-context";
 import "./globals.css";
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 export const metadata: Metadata = {
   title: "Out Take Studio — Production & Camera Rental",
@@ -21,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${plexMono.variable} h-full`}>
+    <html lang="en" className="h-full">
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/hcw5lmv.css" />
       </head>

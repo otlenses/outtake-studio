@@ -33,6 +33,12 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local admin panel data store (contains customer PII — never commit)
+/data/
+/public/uploads/payment-slips/
+/public/uploads/gear/
+/public/uploads/merch/
+
 # vercel
 .vercel
 

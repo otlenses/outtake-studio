@@ -1,20 +1,54 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { packages } from "@/lib/data";
+import { type packages, formatName } from "@/lib/data";
 
-export default function PackageCard({ pkg }: { pkg: (typeof packages)[number] }) {
+export default function PackageCard({
+  pkg,
+  variant = "default",
+}: {
+  pkg: (typeof packages)[number];
+  /** "home": wider 4:3 image area (packages show several items per photo) and a larger price */
+  variant?: "default" | "home" | "row";
+}) {
+  const home = variant === "home";
   const href = `/packages/${pkg.id}`;
+
+  if (variant === "row") {
+    return (
+      <div className="relative flex w-full flex-col overflow-hidden border border-smoke bg-white text-ink">
+        <div className="relative aspect-[6/5] w-full bg-smoke">
+          <Image src={pkg.image} alt={pkg.name} fill sizes="100vw" className="object-cover" />
+        </div>
+        <div className="flex flex-col p-4">
+          <p className="truncate font-mono text-[11.5px] font-medium uppercase tracking-[0.02em] text-[#0a72d6]">{pkg.tagline}</p>
+          <h3 className="mt-2 line-clamp-2 font-display text-[21px] font-extrabold leading-tight tracking-tight">{formatName(pkg.name)}</h3>
+          <p className="mt-4 flex items-baseline gap-1.5">
+            <span className="font-display text-[26px] font-extrabold tracking-tight">{pkg.price}</span>
+            <span className="text-xs text-[#9d9d9d]">{pkg.period.startsWith("/") ? pkg.period : `/ ${pkg.period}`}</span>
+          </p>
+          <ul className="mt-4 flex flex-col gap-2">
+            {pkg.features.slice(0, 3).map((feat) => (
+              <li key={feat} className="flex items-center gap-2.5 text-sm text-[#707070]">
+                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden className="shrink-0">
+                  <circle cx="12" cy="12" r="11" fill="currentColor" />
+                  <path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {feat}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <Link href={href} className="absolute inset-0 z-10" aria-label={pkg.name} />
+      </div>
+    );
+  }
 
   return (
     <div
       data-card
-      className={`flex w-full flex-col overflow-hidden shadow-md transition-all duration-300 hover:-translate-y-1 ${
-        pkg.featured
-          ? "bg-ink text-white shadow-ink/25 hover:shadow-xl hover:shadow-ink/40"
-          : "bg-white text-ink shadow-ink/10 hover:shadow-xl hover:shadow-ink/20"
-      }`}
+      className="group relative flex w-full flex-col overflow-hidden bg-white text-ink shadow-md shadow-ink/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-ink/20"
     >
-      <Link href={href} className="relative aspect-square w-full bg-smoke">
+      <div className={`relative w-full aspect-[6/5] ${home ? "" : "bg-smoke"}`}>
         <Image
           src={pkg.image}
           alt={pkg.name}
@@ -22,55 +56,35 @@ export default function PackageCard({ pkg }: { pkg: (typeof packages)[number] })
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
           className="object-cover"
         />
-      </Link>
+      </div>
 
-      <div
-        className={`flex flex-1 flex-col border-x border-b p-6 ${
-          pkg.featured ? "border-ink" : "border-smoke"
-        }`}
-      >
-        <p
-          className={`line-clamp-2 min-h-[2rem] font-mono text-[10px] uppercase tracking-[0.2em] ${
-            pkg.featured ? "text-signal" : "text-ash"
-          }`}
-        >
+      <div className="flex flex-1 flex-col border-x border-b border-smoke p-5">
+        <p className="line-clamp-1 font-mono text-[11px] font-medium uppercase tracking-[0.02em] text-[#0a72d6]">
           {pkg.tagline}
         </p>
-        <h3 className="mt-2 line-clamp-2 min-h-[3.5rem] font-display text-xl font-black uppercase leading-tight tracking-tight">
-          <Link href={href} className="hover:underline">
-            {pkg.name}
-          </Link>
+        <h3 className={`mt-2 line-clamp-2 min-h-[3rem] font-display leading-tight tracking-tight transition-colors group-hover:underline text-[21px] font-extrabold md:text-lg`}>
+          {formatName(pkg.name)}
         </h3>
-        <p className="mt-4 flex items-baseline gap-1">
-          <span className="font-display text-3xl font-black">{pkg.price}</span>
-          <span className={`font-mono text-xs ${pkg.featured ? "text-white/60" : "text-ash"}`}>
-            {pkg.period}
-          </span>
-        </p>
 
-        <Link
-          href={href}
-          className={`mt-5 flex items-center justify-center rounded-full py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-transform hover:scale-[1.02] ${
-            pkg.featured ? "bg-signal text-ink" : "bg-ink text-white"
-          }`}
-        >
-          View Details
-        </Link>
-
-        <ul className="mt-6 flex flex-col gap-2.5">
+        <ul className="mt-4 flex flex-col gap-2">
           {pkg.features.slice(0, 5).map((feat) => (
-            <li
-              key={feat}
-              className={`flex items-start gap-2 text-xs ${
-                pkg.featured ? "text-white/80" : "text-ash"
-              }`}
-            >
-              <span className={pkg.featured ? "text-signal" : "text-ink"}>✓</span>
+            <li key={feat} className="flex items-start gap-2 text-xs text-[#707070]">
+              <svg className="mt-px shrink-0" width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+                <circle cx="12" cy="12" r="11" fill="currentColor" />
+                <path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
               {feat}
             </li>
           ))}
         </ul>
+
+        <p className="mt-auto flex items-baseline gap-1.5 pt-6">
+          <span className={`font-display tracking-tight text-ink text-[26px] font-extrabold md:text-2xl`}>{pkg.price}</span>
+          <span className="text-xs text-[#9d9d9d]">{`/ ${pkg.period.replace(/^\//, "").trim()}`}</span>
+        </p>
       </div>
+
+      <Link href={href} className="absolute inset-0 z-10" aria-label={pkg.name} />
     </div>
   );
 }

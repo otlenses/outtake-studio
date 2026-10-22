@@ -3,7 +3,7 @@ import Nav from "@/components/Nav";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import PackageDetail from "@/components/PackageDetail";
-import { getPackage } from "@/lib/data";
+import { getPackageProduct } from "@/lib/server/db";
 
 export default async function PackageDetailPage({
   params,
@@ -11,7 +11,7 @@ export default async function PackageDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const pkg = getPackage(id);
+  const pkg = await getPackageProduct(id);
 
   if (!pkg) notFound();
 

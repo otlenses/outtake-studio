@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { workItems, type WorkItem } from "@/lib/data";
+import Breadcrumb from "@/components/Breadcrumb";
+import type { WorkItem } from "@/lib/data";
 import WorkCard from "./WorkCard";
 import ScrollReveal from "./ScrollReveal";
 
@@ -15,22 +16,20 @@ function categorize(item: WorkItem): Category {
   return "Others";
 }
 
-export default function OurWork() {
+export default function OurWork({ items }: { items: WorkItem[] }) {
   const [active, setActive] = useState<Category>("All");
 
   const filtered = useMemo(
-    () => (active === "All" ? workItems : workItems.filter((item) => categorize(item) === active)),
-    [active]
+    () => (active === "All" ? items : items.filter((item) => categorize(item) === active)),
+    [active, items]
   );
 
   return (
     <section className="bg-ink py-20 text-white md:py-28">
       <ScrollReveal className="px-[max(1.5rem,4vw)]">
         <div className="mx-auto mb-10">
-          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.3em] text-signal">
-            Selected Projects
-          </p>
-          <h2 className="font-display text-3xl font-black uppercase tracking-tight md:text-4xl">
+          <Breadcrumb dark items={[{ label: "Home", href: "/" }, { label: "Our Work" }]} />
+          <h2 className="page-title font-display text-3xl font-black tracking-tight md:text-4xl">
             Our Work
           </h2>
 

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Nav from "@/components/Nav";
 import CartDrawer from "@/components/CartDrawer";
 import ProjectDetail from "@/components/ProjectDetail";
-import { getWorkItem } from "@/lib/data";
+import { getPortfolioProject } from "@/lib/server/db";
 
 export default async function ProjectPage({
   params,
@@ -10,7 +10,7 @@ export default async function ProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const item = getWorkItem(id);
+  const item = await getPortfolioProject(id);
 
   if (!item) notFound();
 
