@@ -7,8 +7,8 @@
  *   4. npm run import:supabase              (dry run: shows what would be imported)
  *      npm run import:supabase -- --apply   (really imports)
  *
- * Safe to re-run: records are upserted by id, files are uploaded with upsert. It refuses to run if the
- * database already contains data unless you also pass --force.
+ * If the database already contains data (e.g. the running dev server filled it with the default catalogue the
+ * moment Supabase was connected), the import stops. Add --force to REPLACE everything in Supabase with the local data.
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -67,13 +67,34 @@ async function main() {
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const store = createSupabaseStore(createSupabaseBackend(supabase));
 
-  const existing = await store.load();
-  if (existing && !FORCE) {
-    throw new Error("The Supabase database already has data. Re-run with --force to import over it.");
+  const { data: existingRows, error: readError } = await supabase.from("records").select("collection");
+  if (readError) throw new Error(`Could not read Supabase (did you run supabase/schema.sql?): ${readError.message}`);
+  const existingCounts: Record<string, number> = {};
+  for (const r of existingRows ?? []) existingCounts[r.collection] = (existingCounts[r.collection] ?? 0) + 1;
+  const existingTotal = existingRows?.length ?? 0;
+  if (existingTotal > 0) {
+    console.log("\nSupabase already contains data:");
+    for (const [k, n] of Object.entries(existingCounts)) console.log(`  ${k.padEnd(18)} ${n}`);
+    console.log("(Usually the default catalogue the dev server wrote when Supabase was first connected.)");
   }
   if (!APPLY) {
-    console.log("\nDry run only — nothing was changed. Re-run with --apply to import.");
+    console.log(
+      existingTotal > 0
+        ? "\nDry run only — nothing was changed. To REPLACE what is in Supabase with your local data, run:\n  npm run import:supabase -- --apply --force"
+        : "\nDry run only — nothing was changed. Re-run with --apply to import."
+    );
     return;
+  }
+  if (existingTotal > 0 && !FORCE) {
+    throw new Error("Supabase already has data. Add --force to replace it with your local data.");
+  }
+  if (existingTotal > 0) {
+    // replace mode: clear the tables first so Supabase ends up identical to the local data
+    const a = await supabase.from("records").delete().neq("collection", "");
+    if (a.error) throw new Error(`Could not clear records: ${a.error.message}`);
+    const b = await supabase.from("settings").delete().neq("key", "");
+    if (b.error) throw new Error(`Could not clear settings: ${b.error.message}`);
+    console.log("Cleared the existing Supabase data.");
   }
 
   // 1. files -> Storage. Payment slips go to the private bucket; everything else to the public one.
