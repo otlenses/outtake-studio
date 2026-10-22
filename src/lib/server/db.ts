@@ -2,6 +2,8 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import previewSeed from "./preview-seed.json";
+import { getSupabase, isSupabaseEnabled, createSupabaseBackend, PUBLIC_BUCKET, SLIP_BUCKET } from "./supabase";
+import { createFileStore, createSupabaseStore, type StoreKey } from "./store";
 import { hashPassword } from "./passwords";
 import {
   gearItems,
@@ -21,6 +23,12 @@ const ON_VERCEL = Boolean(process.env.VERCEL);
 const DB_PATH = ON_VERCEL
   ? path.join(os.tmpdir(), "outtake-db.json")
   : path.join(process.cwd(), "data", "db.json");
+// With SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY set, data lives in Supabase (Postgres) and uploads in Supabase
+// Storage. Without them it falls back to the local JSON file / folder above.
+const USE_SUPABASE = isSupabaseEnabled();
+const store = USE_SUPABASE
+  ? createSupabaseStore(createSupabaseBackend(getSupabase()))
+  : createFileStore(DB_PATH);
 const UPLOAD_ROOT = ON_VERCEL ? path.join(os.tmpdir(), "uploads") : path.join(process.cwd(), "public", "uploads");
 
 export type OrderItem = {
@@ -168,18 +176,14 @@ type DbShape = {
 
 // Reads the JSON store, seeding/migrating any missing sections in place —
 // safe to call even on a db.json created before the catalog existed.
-async function ensureDb(): Promise<DbShape> {
-  let db: Partial<DbShape>;
-  try {
-    const raw = await fs.readFile(DB_PATH, "utf-8");
-    db = JSON.parse(raw) as Partial<DbShape>;
-  } catch {
-    db = ON_VERCEL ? (structuredClone(previewSeed) as unknown as Partial<DbShape>) : {};
-  }
+// `only` lets read-only callers load just the parts they need (Supabase mode); everything else is left alone.
+async function ensureDb(only?: readonly StoreKey[]): Promise<DbShape> {
+  let db = (await store.load(only)) as Partial<DbShape> | null;
+  if (!db) db = ON_VERCEL && !USE_SUPABASE ? (structuredClone(previewSeed) as unknown as Partial<DbShape>) : {};
 
   let needsWrite = false;
 
-  if (!db.adminUsers || db.adminUsers.length === 0) {
+  if ((!only || only.includes("adminUsers")) && (!db.adminUsers || db.adminUsers.length === 0)) {
     const seedEmail = process.env.ADMIN_EMAIL || "admin@outtakestudio.com";
     const seedPassword = process.env.ADMIN_PASSWORD || "changeme123";
     db.adminUsers = [{ id: crypto.randomUUID(), email: seedEmail, passwordHash: hashPassword(seedPassword) }];
@@ -460,10 +464,7 @@ async function ensureDb(): Promise<DbShape> {
   }
 
   const full = db as DbShape;
-  if (needsWrite) {
-    await fs.mkdir(path.dirname(DB_PATH), { recursive: true });
-    await fs.writeFile(DB_PATH, JSON.stringify(full, null, 2));
-  }
+  if (needsWrite) await store.save(full as unknown as Record<string, unknown>);
   return full;
 }
 
@@ -479,7 +480,7 @@ function nextInvoiceNumber(existingNumbers: string[], prefix: string): string {
 }
 
 async function writeDb(db: DbShape): Promise<void> {
-  await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2));
+  await store.save(db as unknown as Record<string, unknown>);
 }
 
 export async function findAdminByEmail(email: string): Promise<AdminUser | null> {
@@ -689,6 +690,25 @@ function uniqueId(base: string, existingIds: string[]): string {
   return `${slug}-${n}`;
 }
 
+// Stores an uploaded file and returns the URL the site should use for it.
+// Local: public/uploads/<folder>/. Supabase: the public "uploads" bucket; payment slips go to a private bucket and
+// are only reachable through /api/payment-slip/<file>, which checks the admin login.
+async function storeUpload(folder: string, filename: string, buffer: Buffer, contentType: string): Promise<string> {
+  if (!USE_SUPABASE) {
+    const dir = path.join(UPLOAD_ROOT, folder);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, filename), buffer);
+    return `/uploads/${folder}/${filename}`;
+  }
+  const storage = getSupabase().storage;
+  const isSlip = folder === "payment-slips";
+  const bucket = isSlip ? SLIP_BUCKET : PUBLIC_BUCKET;
+  const objectPath = isSlip ? filename : `${folder}/${filename}`;
+  const { error } = await storage.from(bucket).upload(objectPath, buffer, { contentType, upsert: false });
+  if (error) throw new Error(`Could not upload the file: ${error.message}`);
+  return isSlip ? `/api/payment-slip/${filename}` : storage.from(bucket).getPublicUrl(objectPath).data.publicUrl;
+}
+
 export async function saveUploadedImage(
   file: File,
   folder: "gear" | "packages" | "portfolio" | "merch" | "payment-slips" | "payment-settings" | "banners"
@@ -702,10 +722,7 @@ export async function saveUploadedImage(
   const extRaw = file.name.split(".").pop() || "jpg";
   const ext = extRaw.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const dir = path.join(UPLOAD_ROOT, folder);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, filename), buffer);
-  return `/uploads/${folder}/${filename}`;
+  return storeUpload(folder, filename, buffer, file.type);
 }
 
 // Resolves the final ordered image list from an ImageManager field pair:
@@ -747,14 +764,11 @@ export async function saveUploadedVideo(
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp4`;
-  const dir = path.join(UPLOAD_ROOT, folder);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, filename), buffer);
-  return `/uploads/${folder}/${filename}`;
+  return storeUpload(folder, filename, buffer, "video/mp4");
 }
 
 export async function listGearCategories(): Promise<string[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["gearCategories"]);
   return db.gearCategories;
 }
 
@@ -769,12 +783,12 @@ export async function addGearCategory(name: string): Promise<string[]> {
 }
 
 export async function listGearProducts(): Promise<GearProduct[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["gearProducts"]);
   return db.gearProducts;
 }
 
 export async function getGearProduct(id: string): Promise<GearProduct | null> {
-  const db = await ensureDb();
+  const db = await ensureDb(["gearProducts"]);
   return db.gearProducts.find((g) => g.id === id) ?? null;
 }
 
@@ -805,12 +819,12 @@ export async function deleteGearProduct(id: string): Promise<void> {
 }
 
 export async function listMerchProducts(): Promise<MerchProduct[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["merchProducts"]);
   return db.merchProducts;
 }
 
 export async function getMerchProduct(id: string): Promise<MerchProduct | null> {
-  const db = await ensureDb();
+  const db = await ensureDb(["merchProducts"]);
   return db.merchProducts.find((m) => m.id === id) ?? null;
 }
 
@@ -841,12 +855,12 @@ export async function deleteMerchProduct(id: string): Promise<void> {
 }
 
 export async function listPackageProducts(): Promise<PackageProduct[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["packageProducts"]);
   return db.packageProducts;
 }
 
 export async function getPackageProduct(id: string): Promise<PackageProduct | null> {
-  const db = await ensureDb();
+  const db = await ensureDb(["packageProducts"]);
   return db.packageProducts.find((p) => p.id === id) ?? null;
 }
 
@@ -880,12 +894,12 @@ export async function deletePackageProduct(id: string): Promise<void> {
 }
 
 export async function listPortfolioProjects(): Promise<PortfolioProject[]> {
-  const db = await ensureDb();
+  const db = await ensureDb(["portfolioProjects"]);
   return db.portfolioProjects;
 }
 
 export async function getPortfolioProject(id: string): Promise<PortfolioProject | null> {
-  const db = await ensureDb();
+  const db = await ensureDb(["portfolioProjects"]);
   return db.portfolioProjects.find((p) => p.id === id) ?? null;
 }
 
@@ -934,7 +948,7 @@ export async function movePortfolioProject(id: string, direction: "up" | "down")
 // ---------------------------------------------------------------------------
 
 export async function getPaymentSettings(): Promise<PaymentSettings> {
-  const db = await ensureDb();
+  const db = await ensureDb(["paymentSettings"]);
   return db.paymentSettings;
 }
 
@@ -1034,7 +1048,7 @@ export async function createMerchOrder(input: {
 // ---------------------------------------------------------------------------
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-  const db = await ensureDb();
+  const db = await ensureDb(["siteSettings"]);
   return db.siteSettings;
 }
 
@@ -1073,7 +1087,7 @@ export type CatalogSearchResult = {
 export async function searchCatalog(query: string): Promise<CatalogSearchResult[]> {
   const needle = query.trim().toLowerCase();
   if (!needle) return [];
-  const db = await ensureDb();
+  const db = await ensureDb(["gearProducts", "merchProducts"]);
 
   const gearMatches: CatalogSearchResult[] = db.gearProducts
     .filter((g) => g.isEnabled)
