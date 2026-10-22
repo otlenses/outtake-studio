@@ -9,7 +9,11 @@
     "lint": "eslint",
     "backup": "bash scripts/backup.sh",
     "import:supabase": "npx tsx scripts/import-to-supabase.ts",
-    "admin:set": "npx tsx scripts/set-admin.ts"
+    "backup:supabase": "npx tsx scripts/backup-supabase.ts",
+    "admin:set": "npx tsx scripts/set-admin.ts",
+    "admin:list": "npx tsx scripts/admin-users.ts list",
+    "admin:add": "npx tsx scripts/admin-users.ts add",
+    "admin:remove": "npx tsx scripts/admin-users.ts remove"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
