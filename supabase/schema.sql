@@ -24,6 +24,11 @@ create table if not exists public.settings (
 alter table public.records enable row level security;
 alter table public.settings enable row level security;
 
+-- Only the server (service_role) may touch these tables. Granting explicitly means this also works when the
+-- project setting "Automatically expose new tables" is turned off (which Supabase recommends).
+revoke all on public.records, public.settings from anon, authenticated;
+grant all on public.records, public.settings to service_role;
+
 -- File storage: public bucket for catalogue images, private bucket for customers' payment slips.
 insert into storage.buckets (id, name, public) values ('uploads', 'uploads', true)
   on conflict (id) do nothing;
