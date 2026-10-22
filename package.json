@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "backup": "bash scripts/backup.sh",
-    "import:supabase": "npx tsx scripts/import-to-supabase.ts"
+    "import:supabase": "npx tsx scripts/import-to-supabase.ts",
+    "admin:set": "npx tsx scripts/set-admin.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
