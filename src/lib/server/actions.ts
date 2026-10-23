@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import {
   addGearCategory,
   changeMerchOrderStatus,
@@ -78,12 +79,11 @@ export async function submitOrderRequest(input: {
       return { ok: false };
     }
     const order = await createOrder(input);
-    sendOrderNotificationEmail(order).catch((err) =>
-      console.error("Failed to send order notification email", err)
-    );
-    sendCustomerConfirmationEmail(order).catch((err) =>
-      console.error("Failed to send customer confirmation email", err)
-    );
+    // after(): lets the emails finish sending after the response goes out. A bare un-awaited call is
+    // cut off on serverless hosts (Vercel), so the emails never left.
+    after(async () => {
+      await Promise.allSettled([sendOrderNotificationEmail(order), sendCustomerConfirmationEmail(order)]);
+    });
     return { ok: true, orderNumber: order.orderNumber };
   } catch (err) {
     console.error("Failed to save order request", err);
@@ -522,12 +522,12 @@ export async function submitMerchOrder(
       notes,
     });
 
-    sendMerchOrderNotificationEmail(order).catch((err) =>
-      console.error("Failed to send merch order notification email", err)
-    );
-    sendMerchCustomerConfirmationEmail(order).catch((err) =>
-      console.error("Failed to send merch customer confirmation email", err)
-    );
+    after(async () => {
+      await Promise.allSettled([
+        sendMerchOrderNotificationEmail(order),
+        sendMerchCustomerConfirmationEmail(order),
+      ]);
+    });
 
     revalidatePath("/admin/merch-orders");
     return { ok: true, orderNumber: order.orderNumber };

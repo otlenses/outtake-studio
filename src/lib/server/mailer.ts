@@ -34,7 +34,7 @@ export async function sendOrderNotificationEmail(order: OrderRequest): Promise<v
     .join("\n");
 
   const text = [
-    `New order request: ${order.orderNumber}`,
+    `New quote request: ${order.orderNumber}`,
     "",
     `Customer: ${order.customerName}`,
     `Phone: ${order.customerPhone}`,
@@ -55,7 +55,7 @@ export async function sendOrderNotificationEmail(order: OrderRequest): Promise<v
     await transport.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: notifyTo,
-      subject: `New order request — ${order.orderNumber}`,
+      subject: `New quote request — ${order.orderNumber}`,
       text,
     });
   } catch (err) {
@@ -76,7 +76,7 @@ export async function sendCustomerConfirmationEmail(order: OrderRequest): Promis
   const text = [
     `Hi ${order.customerName || "there"},`,
     "",
-    `We've received your order request ${order.orderNumber}. We'll confirm availability and pricing with you directly.`,
+    `We've received your quote request ${order.orderNumber}. We'll confirm availability and pricing with you directly.`,
     "",
     "Items requested:",
     itemLines,
@@ -93,7 +93,7 @@ export async function sendCustomerConfirmationEmail(order: OrderRequest): Promis
     await transport.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: order.customerEmail,
-      subject: `Order request received — ${order.orderNumber}`,
+      subject: `Quote request received — ${order.orderNumber}`,
       text,
     });
   } catch (err) {
