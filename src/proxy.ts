@@ -18,6 +18,9 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 function checkPreviewAuth(request: NextRequest): NextResponse | null {
   if (DISABLED) return null;
 
+  // the daily health check (Vercel cron) carries no browser password; the route checks CRON_SECRET itself
+  if (request.nextUrl.pathname === "/api/health") return null;
+
   const host = request.nextUrl.hostname;
   if (LOCAL_HOSTS.has(host)) return null;
 
