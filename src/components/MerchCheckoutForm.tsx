@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { compressImage, setInputFile } from "@/lib/compress-image";
 import Image from "next/image";
 import Link from "next/link";
 import { type MerchItem, formatName } from "@/lib/data";
@@ -218,9 +219,17 @@ export default function MerchCheckoutForm({
                     name="paymentSlip"
                     accept="image/*"
                     required
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      setSlipPreview(file ? URL.createObjectURL(file) : null);
+                    onChange={async (e) => {
+                      const input = e.currentTarget;
+                      const original = input.files?.[0];
+                      if (!original) {
+                        setSlipPreview(null);
+                        return;
+                      }
+                      // phone photos are several MB; shrink first so the upload is accepted
+                      const file = await compressImage(original, { maxSide: 1800 });
+                      if (file !== original) setInputFile(input, file);
+                      setSlipPreview(URL.createObjectURL(file));
                     }}
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   />

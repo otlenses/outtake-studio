@@ -90,6 +90,7 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
           label="QR payment code (e.g. DuitNow QR)"
           initialUrl={settings.qrImage}
           fit="contain"
+          compress={{ maxSide: 1200, format: "png" }}
           onChange={({ empty }) => setRemoveQr(empty)}
         />
 

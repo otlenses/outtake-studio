@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@/lib/compress-image";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
@@ -25,10 +26,11 @@ export default function ImageManager({
   const hiddenFileInputRef = useRef<HTMLInputElement>(null);
   const dragIndex = useRef<number | null>(null);
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null) => {
     if (!files) return;
     const remaining = MAX_IMAGES - items.length;
-    const toAdd = Array.from(files).slice(0, remaining);
+    // shrink each photo in the browser first (also keeps the upload under the host's request-size limit)
+    const toAdd = await Promise.all(Array.from(files).slice(0, remaining).map((f) => compressImage(f)));
     const newEntries: ImageEntry[] = toAdd.map((file) => ({
       key: `new-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       kind: "new",
@@ -128,7 +130,7 @@ export default function ImageManager({
         )}
       </div>
       <ul className="mt-3 list-disc pl-5 text-xs text-ash">
-        <li>Size: Max 8MB per image</li>
+        <li>Photos are resized and compressed automatically</li>
         <li>Format: JPG, PNG</li>
         <li>First image is the main photo — drag to reorder</li>
       </ul>

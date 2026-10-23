@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { compressImage, setInputFile } from "@/lib/compress-image";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { savePortfolioProjectAction } from "@/lib/server/actions";
@@ -152,9 +153,13 @@ export default function PortfolioForm({ initial }: { initial?: PortfolioProject 
                 accept="image/*"
                 ref={imageInputRef}
                 required={!previewUrl}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) setPreviewUrl(URL.createObjectURL(file));
+                onChange={async (e) => {
+                  const input = e.currentTarget;
+                  const original = input.files?.[0];
+                  if (!original) return;
+                  const file = await compressImage(original);
+                  if (file !== original) setInputFile(input, file);
+                  setPreviewUrl(URL.createObjectURL(file));
                 }}
                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               />

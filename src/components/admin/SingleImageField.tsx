@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { compressImage, setInputFile, type CompressOptions } from "@/lib/compress-image";
 
 /**
  * One-image uploader in the same style as the product "Add image" tiles.
@@ -11,8 +12,9 @@ export default function SingleImageField({
   initialUrl = null,
   label,
   required,
-  hint = "Max 8MB · JPG or PNG",
+  hint = "JPG or PNG · resized automatically",
   fit = "cover",
+  compress,
   onChange,
 }: {
   name: string;
@@ -22,6 +24,8 @@ export default function SingleImageField({
   hint?: string;
   /** "contain" keeps the whole picture visible (e.g. QR codes). */
   fit?: "cover" | "contain";
+  /** How to shrink the picture before upload (default: 2000 px, WebP). */
+  compress?: CompressOptions;
   /** `empty` is true when the tile shows no image (nothing saved and nothing picked). */
   onChange?: (state: { file: File | null; empty: boolean }) => void;
 }) {
@@ -43,12 +47,14 @@ export default function SingleImageField({
         accept="image/*"
         required={required && !preview}
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0] ?? null;
-          if (file) {
-            setPreview(URL.createObjectURL(file));
-            onChange?.({ file, empty: false });
-          }
+        onChange={async (e) => {
+          const input = e.currentTarget;
+          const original = input.files?.[0] ?? null;
+          if (!original) return;
+          const file = await compressImage(original, compress);
+          if (file !== original) setInputFile(input, file);
+          setPreview(URL.createObjectURL(file));
+          onChange?.({ file, empty: false });
         }}
       />
 

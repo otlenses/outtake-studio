@@ -1184,3 +1184,12 @@ export async function changeMerchOrderStatus(
   await writeDb(db);
   return order;
 }
+
+/** Everything in the store for a downloadable backup — without the admin logins (password hashes) or payment codes. */
+export async function getBackupData() {
+  const db = await ensureDb();
+  const { adminUsers: _adminUsers, paymentOtp: _paymentOtp, ...data } = db;
+  void _adminUsers;
+  void _paymentOtp;
+  return data;
+}

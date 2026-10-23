@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { compressImage, setInputFile } from "@/lib/compress-image";
 import Image from "next/image";
 import { saveBannerAction } from "@/lib/server/actions";
 import type { BannerContent } from "@/lib/server/db";
@@ -130,16 +131,18 @@ function BannerEditor({
               name="image"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setPreview(URL.createObjectURL(file));
-                  setRemoveImage(false);
-                  setFocus({ x: 50, y: 50 });
-                }
+              onChange={async (e) => {
+                const input = e.currentTarget;
+                const original = input.files?.[0];
+                if (!original) return;
+                const file = await compressImage(original, { maxSide: 2400, quality: 0.85 });
+                if (file !== original) setInputFile(input, file);
+                setPreview(URL.createObjectURL(file));
+                setRemoveImage(false);
+                setFocus({ x: 50, y: 50 });
               }}
             />
-            <span className="text-xs text-ash">Recommended: 1920×780px · Max 8MB · JPG or PNG</span>
+            <span className="text-xs text-ash">Recommended: 1920×780px · JPG or PNG · resized automatically</span>
           </div>
         </div>
 

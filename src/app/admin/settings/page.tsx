@@ -4,11 +4,13 @@ import SegmentedControl from "@/components/admin/SegmentedControl";
 import BannerSettings from "./BannerSettings";
 import NotificationSettingsForm from "./NotificationSettings";
 import PaymentSettingsForm from "./PaymentSettings";
+import BackupSettings from "./BackupSettings";
 
 const TAB_OPTIONS = [
   { value: "banner", label: "Banner" },
   { value: "notifications", label: "Notifications" },
   { value: "payment", label: "Payment" },
+  { value: "backup", label: "Backup" },
 ];
 
 export default async function AdminSettingsPage({
@@ -33,6 +35,8 @@ export default async function AdminSettingsPage({
         <NotificationSettingsForm settings={siteSettings.notifications} />
       ) : tab === "payment" ? (
         <PaymentSettingsForm settings={paymentSettings} />
+      ) : tab === "backup" ? (
+        <BackupSettings />
       ) : (
         <BannerSettings home={siteSettings.banners.home} rental={siteSettings.banners.rental} />
       )}
