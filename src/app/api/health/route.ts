@@ -2,14 +2,11 @@ import { getSiteSettings } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
-// Tiny database read, hit once a day by a Vercel cron job (see vercel.json). It keeps a free Supabase project
-// from being paused for inactivity, and doubles as a "is the site + database up?" check.
-// If CRON_SECRET is set, only requests carrying it (Vercel adds it to cron calls) are answered.
-export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+// A tiny database read. It is called
+//  - once a day by a Vercel cron job (see vercel.json), which keeps a free Supabase project from being paused, and
+//  - every 30 minutes by the "Uptime check" GitHub workflow, which emails the owner if the site or database is down.
+// It returns nothing but ok / not ok, so it is safe to leave open.
+export async function GET() {
   try {
     await getSiteSettings();
     return Response.json({ ok: true, at: new Date().toISOString() });
