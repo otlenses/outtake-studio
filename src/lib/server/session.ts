@@ -71,3 +71,31 @@ export function verifyPaymentUnlockToken(token: string | undefined | null): bool
 export function hashOtpCode(code: string): string {
   return createHmac("sha256", SESSION_SECRET).update(`otp:${code}`).digest("hex");
 }
+
+// Cookie that remembers the visitor passed the client-preview password page.
+export const PREVIEW_COOKIE = "ot_preview";
+export const PREVIEW_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+
+export function createPreviewToken(): string {
+  const payload = { purpose: "preview", exp: Date.now() + PREVIEW_COOKIE_MAX_AGE * 1000 };
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${payloadB64}.${sign(payloadB64)}`;
+}
+
+export function verifyPreviewToken(token: string | undefined | null): boolean {
+  if (!token) return false;
+  const [payloadB64, signature] = token.split(".");
+  if (!payloadB64 || !signature) return false;
+  const expectedBuf = Buffer.from(sign(payloadB64));
+  const actualBuf = Buffer.from(signature);
+  if (expectedBuf.length !== actualBuf.length || !timingSafeEqual(expectedBuf, actualBuf)) return false;
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8")) as {
+      purpose?: string;
+      exp?: number;
+    };
+    return payload.purpose === "preview" && typeof payload.exp === "number" && Date.now() < payload.exp;
+  } catch {
+    return false;
+  }
+}

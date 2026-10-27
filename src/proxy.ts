@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/server/session";
+import { PREVIEW_COOKIE, SESSION_COOKIE, verifyPreviewToken, verifySessionToken } from "@/lib/server/session";
 
-// Simple HTTP Basic Auth gate for the client preview deployment.
-// Set PREVIEW_USER / PREVIEW_PASSWORD as environment variables in the host
-// (e.g. Vercel project settings). The fallback values below let it work with
-// zero config while the site is only a work-in-progress preview.
+// Password gate for the client preview deployment. Visitors without the preview cookie are sent to /preview-login,
+// where they type PREVIEW_USER / PREVIEW_PASSWORD once (the fallback values below let it work with zero config).
+// A browser "Authorization: Basic" header with the same credentials is still accepted, for scripts and old bookmarks.
 const USER = process.env.PREVIEW_USER ?? "outtake";
 const PASSWORD = process.env.PREVIEW_PASSWORD ?? "preview2026";
 
@@ -18,25 +17,33 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 function checkPreviewAuth(request: NextRequest): NextResponse | null {
   if (DISABLED) return null;
 
-  // the daily health check (Vercel cron) carries no browser password; the route checks CRON_SECRET itself
-  if (request.nextUrl.pathname === "/api/health") return null;
+  const { pathname, search } = request.nextUrl;
+  // the daily health check (Vercel cron, uptime monitor) carries no password; the preview page itself must stay open
+  if (pathname === "/api/health" || pathname === "/preview-login") return null;
 
-  const host = request.nextUrl.hostname;
-  if (LOCAL_HOSTS.has(host)) return null;
+  // the real Host header (nextUrl can say "localhost" in development); local and home-network addresses skip the gate
+  const host = (request.headers.get("host") ?? request.nextUrl.hostname).split(":")[0];
+  if (LOCAL_HOSTS.has(host) || /^(192\.168|10)\./.test(host) || host.endsWith(".local")) return null;
+
+  if (verifyPreviewToken(request.cookies.get(PREVIEW_COOKIE)?.value)) return null;
 
   const header = request.headers.get("authorization");
-
   if (header?.startsWith("Basic ")) {
-    const [user, pass] = atob(header.slice(6)).split(":");
-    if (user === USER && pass === PASSWORD) {
+    const decoded = atob(header.slice(6));
+    const colon = decoded.indexOf(":");
+    if (colon !== -1 && decoded.slice(0, colon) === USER && decoded.slice(colon + 1) === PASSWORD) {
       return null;
     }
   }
 
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Out Take Studio preview"' },
-  });
+  // Page loads go to the password page; everything else (images, data requests, form posts) just gets a 401.
+  const dest = request.headers.get("sec-fetch-dest");
+  if (request.method === "GET" && (dest === null || dest === "document")) {
+    const login = new URL("/preview-login", request.url);
+    login.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(login);
+  }
+  return new NextResponse("Authentication required.", { status: 401 });
 }
 
 // Admin panel auth gate — everything under /admin except the login page
