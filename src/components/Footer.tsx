@@ -36,11 +36,11 @@ export default function Footer() {
               We make sure it does.
             </h2>
             <a
-              href="mailto:hello@outtakestudio.com"
+              href="mailto:ot.studio26@gmail.com"
               className="mt-6 flex items-center gap-2.5 font-body text-sm italic font-medium text-white/50 transition-colors hover:text-signal"
             >
               <MailIcon />
-              hello@outtakestudio.com
+              ot.studio26@gmail.com
             </a>
             <a
               href="https://maps.google.com/?q=Wisma+Academy,+Jalan+19/1,+Seksyen+19,+46300+Petaling+Jaya,+Selangor"
