@@ -33,6 +33,7 @@ const LIST_ROOTS: Record<string, string> = {
   products: "/admin/products",
   merchandise: "/admin/merchandise",
   portfolio: "/admin/portfolio",
+  "motion-control": "/admin/motion-control",
 };
 
 /** Phone-only: which pages show a big back button instead of the top bar */

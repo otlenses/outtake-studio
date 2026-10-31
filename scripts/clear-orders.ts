@@ -1,6 +1,6 @@
 /**
- * Delete ALL order requests and merchandise orders from Supabase, plus the stored payment slips.
- * Products, packages, enquiries, banners and settings are left alone. Invoice numbers restart at INV-R0001 / INV-M0001.
+ * Delete ALL order requests, merchandise orders and enquiries from Supabase, plus the stored payment slips.
+ * Products, packages, banners and settings are left alone. Invoice numbers restart at INV-R0001 / INV-M0001.
  *
  *   npm run backup:supabase        (take a backup first!)
  *   npm run clear:orders           (asks you to type DELETE)
@@ -54,7 +54,10 @@ async function main() {
 
   const orders = await count("orders");
   const merchOrders = await count("merchOrders");
-  console.log(`About to delete: ${orders} order requests, ${merchOrders} merchandise orders, ${slipFiles.length} payment slips.`);
+  const enquiries = await count("enquiries");
+  console.log(
+    `About to delete: ${orders} order requests, ${merchOrders} merchandise orders, ${enquiries} enquiries, ${slipFiles.length} payment slips.`
+  );
 
   if (!process.argv.includes("--yes")) {
     const answer = await ask('Type DELETE to continue: ');
@@ -64,7 +67,7 @@ async function main() {
     }
   }
 
-  for (const collection of ["orders", "merchOrders"]) {
+  for (const collection of ["orders", "merchOrders", "enquiries"]) {
     const { error } = await supabase.from("records").delete().eq("collection", collection);
     if (error) throw new Error(`Could not delete ${collection}: ${error.message}`);
   }
@@ -72,8 +75,12 @@ async function main() {
     const { error } = await supabase.storage.from("payment-slips").remove(slipFiles);
     if (error) throw new Error(`Could not delete payment slips: ${error.message}`);
   }
-  console.log(`Deleted ${orders} order requests, ${merchOrders} merchandise orders and ${slipFiles.length} payment slips.`);
-  console.log(`Remaining: ${await count("orders")} orders, ${await count("merchOrders")} merchandise orders.`);
+  console.log(
+    `Deleted ${orders} order requests, ${merchOrders} merchandise orders, ${enquiries} enquiries and ${slipFiles.length} payment slips.`
+  );
+  console.log(
+    `Remaining: ${await count("orders")} orders, ${await count("merchOrders")} merchandise orders, ${await count("enquiries")} enquiries.`
+  );
 }
 
 main().catch((err) => {

@@ -6,12 +6,16 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import {
   addGearCategory,
+  deleteMotionControlProduct,
+  moveMotionControlProduct,
+  saveUploadedPdf,
   changeMerchOrderStatus,
   changeOrderStatus,
   createEnquiry,
   createGearProduct,
   createMerchOrder,
   createMerchProduct,
+  createMotionControlProduct,
   createOrder,
   createPackageProduct,
   createPortfolioProject,
@@ -30,6 +34,7 @@ import {
   updateGearProduct,
   updateMerchOrder,
   updateMerchProduct,
+  updateMotionControlProduct,
   updateNotificationSettings,
   updateOrder,
   updatePackageProduct,
@@ -191,6 +196,8 @@ function revalidateCatalog() {
   revalidatePath("/admin/products");
   revalidatePath("/admin/merchandise");
   revalidatePath("/admin/portfolio");
+  revalidatePath("/motion-control");
+  revalidatePath("/admin/motion-control");
   revalidatePath("/admin/availability");
 }
 
@@ -460,6 +467,65 @@ export async function movePortfolioProjectAction(id: string, direction: "up" | "
   await verifyAdminSession();
   await movePortfolioProject(id, direction);
   revalidateCatalog();
+}
+
+export async function saveMotionControlProductAction(formData: FormData): Promise<ActionResult> {
+  await verifyAdminSession();
+  try {
+    const id = String(formData.get("id") || "");
+    const name = String(formData.get("name") || "").trim();
+    const description = String(formData.get("description") || "").trim();
+    const isEnabled = formData.get("isEnabled") === "on";
+    const removePdf = formData.get("removeRateCard") === "1";
+    const imageFile = formData.get("image") as File | null;
+    const pdfFile = formData.get("rateCard") as File | null;
+
+    if (!name) return { ok: false, error: "Product name is required." };
+
+    let image: string | undefined;
+    if (imageFile && imageFile.size > 0) image = await saveUploadedImage(imageFile, "motion-control");
+
+    // a new PDF replaces the old one; "Remove" clears it; otherwise the saved one is kept
+    let rateCardUrl: string | undefined;
+    if (pdfFile && pdfFile.size > 0) rateCardUrl = await saveUploadedPdf(pdfFile, "motion-control");
+    else if (removePdf) rateCardUrl = "";
+
+    const patch = { name, description, isEnabled, ...(image ? { image } : {}), ...(rateCardUrl !== undefined ? { rateCardUrl } : {}) };
+
+    let newId: string | undefined;
+    if (id) {
+      const updated = await updateMotionControlProduct(id, patch);
+      if (!updated) return { ok: false, error: "Product not found." };
+    } else {
+      if (!image) return { ok: false, error: "Please upload a product image." };
+      const created = await createMotionControlProduct({ ...patch, image, rateCardUrl: rateCardUrl ?? "" });
+      newId = created.id;
+    }
+
+    revalidateCatalog();
+    return { ok: true, id: newId };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Something went wrong." };
+  }
+}
+
+export async function deleteMotionControlProductAction(id: string): Promise<void> {
+  await verifyAdminSession();
+  await deleteMotionControlProduct(id);
+  revalidateCatalog();
+}
+
+export async function moveMotionControlProductAction(id: string, direction: "up" | "down"): Promise<void> {
+  await verifyAdminSession();
+  await moveMotionControlProduct(id, direction);
+  revalidateCatalog();
+}
+
+export async function toggleMotionControlEnabledAction(id: string, isEnabled: boolean): Promise<ActionResult> {
+  await verifyAdminSession();
+  await updateMotionControlProduct(id, { isEnabled });
+  revalidateCatalog();
+  return { ok: true };
 }
 
 function linesToArray(value: FormDataEntryValue | null): string[] {

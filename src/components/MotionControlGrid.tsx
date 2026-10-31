@@ -34,31 +34,42 @@ export default function MotionControlGrid({ products }: { products: MotionContro
           <h1 className="page-title font-display text-[32px] font-black tracking-tight md:text-4xl">Motion Control</h1>
         </div>
 
+        {products.length === 0 && <p className="text-sm text-ash">Coming soon.</p>}
+
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setActive(p)}
-              className="group flex flex-col text-left"
-            >
-              <div className="relative aspect-square w-full overflow-hidden border border-smoke bg-smoke transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-ink/10">
-                <Image
-                  src={p.image}
-                  alt={p.name}
-                  fill
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                />
+          {products.map((p) => {
+            const body = (
+              <>
+                <div className="relative aspect-square w-full overflow-hidden border border-smoke bg-smoke transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-ink/10">
+                  <Image
+                    src={p.image}
+                    alt={p.name}
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                </div>
+                <div className="mt-3 flex flex-1 flex-col">
+                  <span className="line-clamp-2 font-display text-base font-extrabold leading-tight tracking-tight md:text-lg">{p.name}</span>
+                  {p.rateCardUrl && (
+                    <span className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ash transition-colors group-hover:text-ink">
+                      Rate card →
+                    </span>
+                  )}
+                </div>
+              </>
+            );
+            // a product without a rate card PDF is shown but not clickable
+            return p.rateCardUrl ? (
+              <button key={p.id} type="button" onClick={() => setActive(p)} className="group flex flex-col text-left">
+                {body}
+              </button>
+            ) : (
+              <div key={p.id} className="group flex flex-col text-left">
+                {body}
               </div>
-              <div className="mt-3 flex flex-1 flex-col">
-                <span className="line-clamp-2 font-display text-base font-extrabold leading-tight tracking-tight md:text-lg">{p.name}</span>
-                <span className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ash transition-colors group-hover:text-ink">
-                  Rate card →
-                </span>
-              </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </ScrollReveal>
 

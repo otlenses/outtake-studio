@@ -18,7 +18,9 @@ export const ARRAY_COLLECTIONS = [
   "merchProducts",
   "merchOrders",
 ] as const;
-export const SETTING_KEYS = ["gearCategories", "paymentSettings", "siteSettings", "paymentOtp"] as const;
+// motionControlProducts is a setting (one row holding the whole short list) so an existing database picks up its
+// starting content on first load without a migration.
+export const SETTING_KEYS = ["gearCategories", "paymentSettings", "siteSettings", "paymentOtp", "motionControlProducts"] as const;
 
 export type CollectionKey = (typeof ARRAY_COLLECTIONS)[number];
 type SettingKey = (typeof SETTING_KEYS)[number];

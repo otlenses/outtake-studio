@@ -10,6 +10,7 @@ import {
   MerchIcon,
   OrdersIcon,
   PortfolioIcon,
+  MotionControlIcon,
   ProductsIcon,
   SettingsIcon,
 } from "./icons";
@@ -53,6 +54,7 @@ function navGroups(counts: SidebarCounts) {
         { href: "/admin/products", label: "Products & packages", icon: ProductsIcon, exact: false, badge: 0 },
         { href: "/admin/merchandise", label: "Merchandise", icon: MerchIcon, exact: false, badge: 0 },
         { href: "/admin/portfolio", label: "Portfolio", icon: PortfolioIcon, exact: false, badge: 0 },
+        { href: "/admin/motion-control", label: "Motion control", icon: MotionControlIcon, exact: false, badge: 0 },
       ],
     },
     {

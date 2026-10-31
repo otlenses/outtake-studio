@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+
 export default function ConfirmDialog({
   title,
   message,
@@ -15,7 +17,10 @@ export default function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  return (
+  // Rendered outside the row that opened it: rows of inactive items are dimmed (opacity-60), and a dialog nested in them would be dimmed too.
+  // Mounted inside the admin wrapper (not document.body) so it keeps the admin zoom and text sizes.
+  const host = document.querySelector<HTMLElement>(".admin-zoom") ?? document.body;
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
         <h2 className="text-lg font-bold text-ink">{title}</h2>
@@ -37,6 +42,7 @@ export default function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    host,
   );
 }

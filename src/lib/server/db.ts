@@ -5,6 +5,7 @@ import previewSeed from "./preview-seed.json";
 import { getSupabase, isSupabaseEnabled, createSupabaseBackend, PUBLIC_BUCKET, SLIP_BUCKET } from "./supabase";
 import { createFileStore, createSupabaseStore, type StoreKey } from "./store";
 import { hashPassword } from "./passwords";
+import { defaultMotionControlProducts, type MotionControlProduct } from "@/lib/motion-control";
 import {
   gearItems,
   packages,
@@ -171,6 +172,7 @@ type DbShape = {
   paymentSettings: PaymentSettings;
   merchOrders: MerchOrder[];
   siteSettings: SiteSettings;
+  motionControlProducts: MotionControlProduct[];
   paymentOtp?: PaymentOtpState | null;
 };
 
@@ -207,6 +209,10 @@ async function ensureDb(only?: readonly StoreKey[]): Promise<DbShape> {
   }
   if (!db.portfolioProjects) {
     db.portfolioProjects = workItems.map((w) => ({ ...w, isEnabled: true }));
+    needsWrite = true;
+  }
+  if (!db.motionControlProducts) {
+    db.motionControlProducts = structuredClone(defaultMotionControlProducts);
     needsWrite = true;
   }
   if (!db.gearCategories) {
@@ -711,7 +717,7 @@ async function storeUpload(folder: string, filename: string, buffer: Buffer, con
 
 export async function saveUploadedImage(
   file: File,
-  folder: "gear" | "packages" | "portfolio" | "merch" | "payment-slips" | "payment-settings" | "banners"
+  folder: "gear" | "packages" | "portfolio" | "merch" | "payment-slips" | "payment-settings" | "banners" | "motion-control"
 ): Promise<string> {
   if (!file || file.size === 0) throw new Error("No file was uploaded.");
   if (!file.type.startsWith("image/")) throw new Error("The uploaded file must be an image.");
@@ -723,6 +729,19 @@ export async function saveUploadedImage(
   const ext = extRaw.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   return storeUpload(folder, filename, buffer, file.type);
+}
+
+// Vercel rejects request bodies over 4.5 MB, so a bigger PDF could never reach the server anyway.
+export const MAX_PDF_BYTES = 4 * 1024 * 1024;
+
+export async function saveUploadedPdf(file: File, folder: "motion-control"): Promise<string> {
+  if (!file || file.size === 0) throw new Error("No PDF was uploaded.");
+  if (file.type !== "application/pdf") throw new Error("The rate card must be a PDF file.");
+  if (file.size > MAX_PDF_BYTES) throw new Error("The PDF must be smaller than 4MB. Please compress it and try again.");
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`;
+  return storeUpload(folder, filename, buffer, "application/pdf");
 }
 
 // Resolves the final ordered image list from an ImageManager field pair:
@@ -939,6 +958,60 @@ export async function movePortfolioProject(id: string, direction: "up" | "down")
   const swapWith = direction === "up" ? index - 1 : index + 1;
   if (swapWith < 0 || swapWith >= db.portfolioProjects.length) return;
   const list = db.portfolioProjects;
+  [list[index], list[swapWith]] = [list[swapWith], list[index]];
+  await writeDb(db);
+}
+
+// ---------------------------------------------------------------------------
+// Motion control (rate card products)
+// ---------------------------------------------------------------------------
+
+export async function listMotionControlProducts(): Promise<MotionControlProduct[]> {
+  const db = await ensureDb(["motionControlProducts"]);
+  return db.motionControlProducts;
+}
+
+export async function getMotionControlProduct(id: string): Promise<MotionControlProduct | null> {
+  const db = await ensureDb(["motionControlProducts"]);
+  return db.motionControlProducts.find((p) => p.id === id) ?? null;
+}
+
+export async function createMotionControlProduct(input: Omit<MotionControlProduct, "id">): Promise<MotionControlProduct> {
+  const db = await ensureDb();
+  const product: MotionControlProduct = {
+    id: uniqueId(input.name, db.motionControlProducts.map((p) => p.id)),
+    ...input,
+  };
+  db.motionControlProducts.push(product);
+  await writeDb(db);
+  return product;
+}
+
+export async function updateMotionControlProduct(
+  id: string,
+  patch: Partial<Omit<MotionControlProduct, "id">>
+): Promise<MotionControlProduct | null> {
+  const db = await ensureDb();
+  const product = db.motionControlProducts.find((p) => p.id === id);
+  if (!product) return null;
+  Object.assign(product, patch);
+  await writeDb(db);
+  return product;
+}
+
+export async function deleteMotionControlProduct(id: string): Promise<void> {
+  const db = await ensureDb();
+  db.motionControlProducts = db.motionControlProducts.filter((p) => p.id !== id);
+  await writeDb(db);
+}
+
+export async function moveMotionControlProduct(id: string, direction: "up" | "down"): Promise<void> {
+  const db = await ensureDb();
+  const list = db.motionControlProducts;
+  const index = list.findIndex((p) => p.id === id);
+  if (index === -1) return;
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= list.length) return;
   [list[index], list[swapWith]] = [list[swapWith], list[index]];
   await writeDb(db);
 }
