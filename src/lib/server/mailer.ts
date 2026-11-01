@@ -17,6 +17,12 @@ function getTransport() {
   });
 }
 
+// Replies to customer-facing mail should reach the shop's inbox, not the noreply sender address.
+async function getShopReplyTo(): Promise<string | undefined> {
+  const { notifications } = await getSiteSettings();
+  return notifications.notifyEmail || process.env.NOTIFY_EMAIL || process.env.OWNER_EMAIL || undefined;
+}
+
 export async function sendOrderNotificationEmail(order: OrderRequest): Promise<void> {
   const { notifications } = await getSiteSettings();
   if (!notifications.emailEnabled) return;
@@ -55,6 +61,7 @@ export async function sendOrderNotificationEmail(order: OrderRequest): Promise<v
     await transport.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: notifyTo,
+      replyTo: order.customerEmail || undefined,
       subject: `New quote request — ${order.orderNumber}`,
       text,
     });
@@ -93,6 +100,7 @@ export async function sendCustomerConfirmationEmail(order: OrderRequest): Promis
     await transport.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: order.customerEmail,
+      replyTo: await getShopReplyTo(),
       subject: `Quote request received — ${order.orderNumber}`,
       text,
     });
@@ -141,6 +149,7 @@ export async function sendMerchOrderNotificationEmail(order: MerchOrder): Promis
     await transport.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: notifyTo,
+      replyTo: order.customerEmail || undefined,
       subject: `New merchandise order — ${order.orderNumber}`,
       text,
     });
@@ -176,6 +185,7 @@ export async function sendMerchCustomerConfirmationEmail(order: MerchOrder): Pro
     await transport.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: order.customerEmail,
+      replyTo: await getShopReplyTo(),
       subject: `Order received — ${order.orderNumber}`,
       text,
     });
