@@ -20,9 +20,9 @@
   --color-signal: var(--color-signal);
   --color-cyan: var(--color-cyan);
   --color-whatsapp: var(--color-whatsapp);
-  --font-display: "avenir-lt-pro", Helvetica, Arial, sans-serif;
-  --font-body: "avenir-lt-pro", Helvetica, Arial, sans-serif;
-  --font-mono: "avenir-lt-pro", Helvetica, Arial, sans-serif;
+  --font-display: var(--font-nunito), Helvetica, Arial, sans-serif;
+  --font-body: var(--font-nunito), Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-nunito), Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -201,26 +201,12 @@ body {
   }
 }
 
-/* Futura (from the supplied Futura.ttc): Bold for page titles, Condensed ExtraBold for banners */
-@font-face {
-  font-family: "Futura Title";
-  src: url("/fonts/Futura-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Futura Banner";
-  src: url("/fonts/Futura-CondensedExtraBold.woff2") format("woff2");
-  font-weight: 800;
-  font-display: swap;
-}
-
-/* Title faces: Futura Bold for page titles, Futura Condensed ExtraBold for banners */
+/* Title faces: Jost (loaded in layout.tsx) Bold for page titles, ExtraBold for banners */
 .page-title {
-  font-family: "Futura Title", var(--font-display);
+  font-family: var(--font-jost), var(--font-display);
   font-weight: 700;
 }
 .banner-title {
-  font-family: "Futura Banner", var(--font-display);
+  font-family: var(--font-jost), var(--font-display);
   font-weight: 800;
 }
