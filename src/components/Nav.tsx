@@ -351,7 +351,7 @@ export default function Nav() {
 
       <div className="flex flex-col items-center gap-3 px-6 pb-8">
         <a
-          href="https://instagram.com/outtakestudio"
+          href="https://www.instagram.com/ot.lenses"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Out Take Studio on Instagram"

@@ -9,18 +9,21 @@ import ScrollReveal from "./ScrollReveal";
 const CATEGORIES = ["All", "Feature Films", "TV Commercials", "Music Videos", "Others"] as const;
 type Category = (typeof CATEGORIES)[number];
 
-function categorize(item: WorkItem): Category {
-  if (item.tags.includes("FEATURE")) return "Feature Films";
-  if (item.tags.includes("COMMERCIAL")) return "TV Commercials";
-  if (item.tags.includes("MV")) return "Music Videos";
-  return "Others";
+// A project can carry several tags, so it shows under every filter it matches.
+// The admin saves FEATURE_FILMS / TV_COMMERCIAL / OTHERS; older data used FEATURE / COMMERCIAL.
+function categories(item: WorkItem): Category[] {
+  const found: Category[] = [];
+  if (item.tags.some((t) => t === "FEATURE" || t === "FEATURE_FILMS")) found.push("Feature Films");
+  if (item.tags.some((t) => t === "COMMERCIAL" || t === "TV_COMMERCIAL")) found.push("TV Commercials");
+  if (item.tags.includes("MV")) found.push("Music Videos");
+  return found.length > 0 ? found : ["Others"];
 }
 
 export default function OurWork({ items }: { items: WorkItem[] }) {
   const [active, setActive] = useState<Category>("All");
 
   const filtered = useMemo(
-    () => (active === "All" ? items : items.filter((item) => categorize(item) === active)),
+    () => (active === "All" ? items : items.filter((item) => categories(item).includes(active))),
     [active, items]
   );
 

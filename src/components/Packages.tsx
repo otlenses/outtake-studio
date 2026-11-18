@@ -40,8 +40,9 @@ export default function Packages({ packages }: { packages: PackageItem[] }) {
             Complete Production Setups
           </h2>
           <p className="mt-4 max-w-2xl text-sm text-ash md:text-base">
-            Pre-built kits covering everything from one-day shoots to multi-day broadcast productions. Compare rates
-            below or contact us for a custom build.
+            Ready-to-shoot camera packages tailored for productions of all sizes, from single-day shoots to
+            large-scale commercial and film productions. Explore our packages below or contact us for a customized
+            setup.
           </p>
         </div>
 

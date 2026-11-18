@@ -49,7 +49,7 @@ export default function WorkCard({ item }: { item: WorkItem }) {
               key={tag}
               className="rounded-full border border-white/25 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-white/70"
             >
-              {tag}
+              {tag.replace(/_/g, " ")}
             </span>
           ))}
         </span>

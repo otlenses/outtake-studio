@@ -126,7 +126,7 @@ export default function Footer() {
                 ))}
               </ul>
               <a
-                href="https://instagram.com/outtakestudio"
+                href="https://www.instagram.com/ot.lenses"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Out Take Studio on Instagram"

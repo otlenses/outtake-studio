@@ -58,9 +58,10 @@ export default function PackagesGrid({ packages }: { packages: PackageItem[] }) 
               Equipment Packages
             </h1>
             <p className="mt-4 max-w-xl text-sm text-[#959595] md:text-base">
-              Pre-built kits covering everything from one-day shoots to
-              multi-day broadcast productions. Compare rates below or contact
-              us for a custom build.
+              Ready-to-shoot camera packages tailored for productions of all
+              sizes, from single-day shoots to large-scale commercial and film
+              productions. Explore our packages below or contact us for a
+              customized setup.
             </p>
           </div>
 

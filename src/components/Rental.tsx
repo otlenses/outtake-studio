@@ -57,7 +57,7 @@ export default function Rental({ items, banner }: { items: GearItem[]; banner: B
                 </p>
               </div>
               <h2 className="page-title font-display text-3xl font-black leading-[1.05] tracking-tight md:text-4xl">
-                Professional Camera Gear
+                Our Collections
               </h2>
             </div>
             <a
