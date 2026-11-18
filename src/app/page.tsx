@@ -23,7 +23,7 @@ export default async function Home() {
       <Nav />
       <CartDrawer />
       <main className="flex flex-1 flex-col">
-        <Rental items={gearItems} banner={siteSettings.banners.home} />
+        <Rental items={gearItems} banner={siteSettings.banners.home} gearListUrl={siteSettings.gearListUrl ?? "/Gear-List.pdf"} />
         <Packages packages={packages} />
       </main>
       <Footer />

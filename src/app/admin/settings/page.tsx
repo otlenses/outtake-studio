@@ -5,11 +5,13 @@ import BannerSettings from "./BannerSettings";
 import NotificationSettingsForm from "./NotificationSettings";
 import PaymentSettingsForm from "./PaymentSettings";
 import BackupSettings from "./BackupSettings";
+import GearListSettings from "./GearListSettings";
 
 const TAB_OPTIONS = [
   { value: "banner", label: "Banner" },
   { value: "notifications", label: "Notifications" },
   { value: "payment", label: "Payment" },
+  { value: "gearlist", label: "Gear list" },
   { value: "backup", label: "Backup" },
 ];
 
@@ -35,6 +37,8 @@ export default async function AdminSettingsPage({
         <NotificationSettingsForm settings={siteSettings.notifications} />
       ) : tab === "payment" ? (
         <PaymentSettingsForm settings={paymentSettings} />
+      ) : tab === "gearlist" ? (
+        <GearListSettings currentUrl={siteSettings.gearListUrl ?? "/Gear-List.pdf"} meta={siteSettings.gearListMeta ?? null} />
       ) : tab === "backup" ? (
         <BackupSettings />
       ) : (

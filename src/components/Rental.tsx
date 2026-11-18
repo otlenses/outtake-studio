@@ -12,7 +12,16 @@ function formatRate(n: number): string {
   return Number.isInteger(n) ? n.toLocaleString("en-MY") : n.toFixed(2);
 }
 
-export default function Rental({ items, banner }: { items: GearItem[]; banner: BannerContent }) {
+export default function Rental({
+  items,
+  banner,
+  gearListUrl,
+}: {
+  items: GearItem[];
+  banner: BannerContent;
+  /** empty when the client removed the gear list */
+  gearListUrl: string;
+}) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState("ALL");
 
@@ -60,13 +69,15 @@ export default function Rental({ items, banner }: { items: GearItem[]; banner: B
                 Our Collections
               </h2>
             </div>
-            <a
-              href="/Gear-List.pdf"
-              download
-              className="inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-sm text-blue-600 transition-colors hover:text-blue-800"
-            >
-              <span className="underline underline-offset-2">Full gear list &gt;</span>
-            </a>
+            {gearListUrl && (
+              <a
+                href={gearListUrl}
+                download
+                className="inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-sm text-blue-600 transition-colors hover:text-blue-800"
+              >
+                <span className="underline underline-offset-2">Full gear list &gt;</span>
+              </a>
+            )}
           </div>
 
           {categories.length > 1 && (
