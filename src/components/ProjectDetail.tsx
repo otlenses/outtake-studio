@@ -13,7 +13,7 @@ export default function ProjectDetail({ item }: { item: WorkItem }) {
               key={tag}
               className="rounded-full border border-white/25 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/70"
             >
-              {tag.replace(/_/g, " ")}
+              {tag}
             </span>
           ))}
         </div>
