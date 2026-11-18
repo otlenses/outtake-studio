@@ -5,26 +5,39 @@ import Breadcrumb from "@/components/Breadcrumb";
 import type { WorkItem } from "@/lib/data";
 import WorkCard from "./WorkCard";
 import ScrollReveal from "./ScrollReveal";
+import { tagLabel } from "@/lib/work-tags";
 
-const CATEGORIES = ["All", "Feature Films", "TV Commercials", "Music Videos", "Others"] as const;
-type Category = (typeof CATEGORIES)[number];
+const ALL = "ALL";
+
+// Which stored tags count as each built-in filter (older data used FEATURE / COMMERCIAL).
+const FILTER_TAGS: Record<string, string[]> = {
+  FEATURE_FILMS: ["FEATURE_FILMS", "FEATURE"],
+  TV_COMMERCIAL: ["TV_COMMERCIAL", "COMMERCIAL"],
+  MV: ["MV"],
+};
 
 // A project can carry several tags, so it shows under every filter it matches.
-// The admin saves FEATURE_FILMS / TV_COMMERCIAL / OTHERS; older data used FEATURE / COMMERCIAL.
-function categories(item: WorkItem): Category[] {
-  const found: Category[] = [];
-  if (item.tags.some((t) => t === "FEATURE" || t === "FEATURE_FILMS")) found.push("Feature Films");
-  if (item.tags.some((t) => t === "COMMERCIAL" || t === "TV_COMMERCIAL")) found.push("TV Commercials");
-  if (item.tags.includes("MV")) found.push("Music Videos");
-  return found.length > 0 ? found : ["Others"];
+// It is in Others when none of the filter tags apply.
+function matches(item: WorkItem, filter: string, filterKeys: string[]): boolean {
+  if (filter === ALL) return true;
+  if (filter === "OTHERS") {
+    return !filterKeys.some((k) => k !== "OTHERS" && matches(item, k, filterKeys)) || item.tags.includes("OTHERS");
+  }
+  return item.tags.some((t) => (FILTER_TAGS[filter] ?? [filter]).includes(t));
 }
 
-export default function OurWork({ items }: { items: WorkItem[] }) {
-  const [active, setActive] = useState<Category>("All");
+export default function OurWork({ items, customTags }: { items: WorkItem[]; customTags: string[] }) {
+  const [active, setActive] = useState<string>(ALL);
+
+  // Built-in filters first, then the tags the client added, Others last.
+  const filterKeys = useMemo(
+    () => ["FEATURE_FILMS", "TV_COMMERCIAL", "MV", ...customTags, "OTHERS"],
+    [customTags]
+  );
 
   const filtered = useMemo(
-    () => (active === "All" ? items : items.filter((item) => categories(item).includes(active))),
-    [active, items]
+    () => items.filter((item) => matches(item, active, filterKeys)),
+    [active, items, filterKeys]
   );
 
   return (
@@ -37,7 +50,7 @@ export default function OurWork({ items }: { items: WorkItem[] }) {
           </h2>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {CATEGORIES.map((cat) => (
+            {[ALL, ...filterKeys].map((cat) => (
               <button
                 key={cat}
                 type="button"
@@ -48,7 +61,7 @@ export default function OurWork({ items }: { items: WorkItem[] }) {
                     : "border-white/25 text-white/70 hover:border-white hover:text-white"
                 }`}
               >
-                {cat}
+                {cat === ALL ? "All" : tagLabel(cat)}
               </button>
             ))}
           </div>

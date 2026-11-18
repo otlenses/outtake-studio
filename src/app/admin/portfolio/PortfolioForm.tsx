@@ -4,7 +4,9 @@ import { useRef, useState, useTransition } from "react";
 import { compressImage, setInputFile } from "@/lib/compress-image";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { savePortfolioProjectAction } from "@/lib/server/actions";
+import { deleteWorkTagAction, savePortfolioProjectAction } from "@/lib/server/actions";
+import { BASE_WORK_TAGS, normalizeTag, tagLabel } from "@/lib/work-tags";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import type { PortfolioProject } from "@/lib/server/db";
 import FormToggle from "@/components/admin/FormToggle";
 import SavedOverlay, { useSavedFlash } from "@/components/admin/SavedOverlay";
@@ -12,19 +14,18 @@ import useFormDirty from "@/components/admin/useFormDirty";
 import UnsavedGuard from "@/components/admin/UnsavedGuard";
 import { Field, Section, StickyActionBar, inputClass } from "@/components/admin/FormParts";
 
-const TAG_OPTIONS = [
-  { value: "MV", label: "MV" },
-  { value: "FEATURE_FILMS", label: "Feature films" },
-  { value: "TV_COMMERCIAL", label: "TV commercial" },
-  { value: "OTHERS", label: "Others" },
-];
-
 const RECOMMENDED_PIXELS: Record<"landscape" | "portrait", string> = {
   landscape: "1600×900px",
   portrait: "900×1600px",
 };
 
-export default function PortfolioForm({ initial }: { initial?: PortfolioProject }) {
+export default function PortfolioForm({
+  initial,
+  customTags = [],
+}: {
+  initial?: PortfolioProject;
+  customTags?: string[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,36 @@ export default function PortfolioForm({ initial }: { initial?: PortfolioProject 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [saved, flashSaved] = useSavedFlash();
   const [visible, setVisible] = useState(initial?.isEnabled ?? true);
+
+  // Tags typed in this session; they are saved to the shared tag list when the project is saved.
+  const [newTags, setNewTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+
+  const known = Array.from(new Set([...BASE_WORK_TAGS, ...customTags, ...newTags])) as string[];
+  // Tags this project already carries from older data stay visible so they are not silently dropped.
+  const tagOptions = [...known, ...(initial?.tags ?? []).filter((t) => !known.includes(t))];
+
+  const addTag = () => {
+    const tag = normalizeTag(tagInput);
+    if (!tag) return;
+    if (!tagOptions.includes(tag)) setNewTags((prev) => [...prev, tag]);
+    setTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
+    setTagInput("");
+  };
+
+  const removeTagEverywhere = (tag: string) => {
+    setTagToDelete(null);
+    setTags((prev) => prev.filter((t) => t !== tag));
+    if (newTags.includes(tag)) {
+      setNewTags((prev) => prev.filter((t) => t !== tag));
+      return;
+    }
+    startTransition(async () => {
+      await deleteWorkTagAction(tag);
+      router.refresh();
+    });
+  };
 
   const toggleTag = (value: string) => {
     setTags((prev) => (prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]));
@@ -53,6 +84,7 @@ export default function PortfolioForm({ initial }: { initial?: PortfolioProject 
       }
       flashSaved();
       markClean();
+      setNewTags([]); // they are in the shared list now
       if (result.id) router.replace(`/admin/portfolio/${result.id}/edit`);
     });
   };
@@ -81,29 +113,69 @@ export default function PortfolioForm({ initial }: { initial?: PortfolioProject 
           <div>
             <span className="mb-2 block text-[13px] font-medium text-ink">Tags</span>
             <div className="flex flex-wrap gap-2">
-              {TAG_OPTIONS.map((opt) => {
-                const checked = tags.includes(opt.value);
+              {tagOptions.map((value) => {
+                const checked = tags.includes(value);
+                const removable = customTags.includes(value) || newTags.includes(value);
                 return (
-                  <label
-                    key={opt.value}
-                    className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${
-                      checked ? "border-ink bg-ink text-white" : "border-ash/30 text-ink hover:border-ink"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      name="tags"
-                      value={opt.value}
-                      checked={checked}
-                      onChange={() => toggleTag(opt.value)}
-                      className="hidden"
-                    />
-                    {opt.label}
-                  </label>
+                  <span key={value} className="inline-flex items-center">
+                    <label
+                      className={`cursor-pointer border px-4 py-1.5 text-xs font-semibold transition-colors ${
+                        removable ? "rounded-l-full border-r-0 pr-3" : "rounded-full"
+                      } ${checked ? "border-ink bg-ink text-white" : "border-ash/30 text-ink hover:border-ink"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        name="tags"
+                        value={value}
+                        checked={checked}
+                        onChange={() => toggleTag(value)}
+                        className="hidden"
+                      />
+                      {tagLabel(value)}
+                    </label>
+                    {removable && (
+                      <button
+                        type="button"
+                        aria-label={`Delete tag ${tagLabel(value)}`}
+                        onClick={() => (newTags.includes(value) ? removeTagEverywhere(value) : setTagToDelete(value))}
+                        className={`rounded-r-full border py-1.5 pl-1 pr-3 text-xs font-semibold transition-colors ${
+                          checked ? "border-ink bg-ink text-white/70 hover:text-white" : "border-ash/30 text-ash hover:border-ink hover:text-ink"
+                        }`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
                 );
               })}
             </div>
-            <p className="mt-1.5 text-xs text-ash">Select any that apply.</p>
+            {newTags.map((t) => (
+              <input key={t} type="hidden" name="newTags" value={t} />
+            ))}
+            <div className="mt-3 flex max-w-sm gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                maxLength={30}
+                placeholder="Add a new tag, e.g. Documentary"
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={addTag}
+                className="shrink-0 rounded-full border border-ink px-4 text-xs font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
+              >
+                Add
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-ash">Select any that apply. Added tags also become filters on the Our Work page.</p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Orientation">
@@ -198,6 +270,15 @@ export default function PortfolioForm({ initial }: { initial?: PortfolioProject 
       <StickyActionBar cancelHref="/admin/portfolio" saveLabel="Save project" isPending={isPending} canSave={dirty} />
       <SavedOverlay show={saved} />
     <UnsavedGuard dirty={dirty} />
+      {tagToDelete && (
+        <ConfirmDialog
+          title="Delete this tag?"
+          message={`"${tagLabel(tagToDelete)}" will be removed from every project and from the Our Work filters.`}
+          confirmLabel="Delete tag"
+          onConfirm={() => removeTagEverywhere(tagToDelete)}
+          onCancel={() => setTagToDelete(null)}
+        />
+      )}
     </form>
   );
 }

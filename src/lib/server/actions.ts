@@ -31,6 +31,9 @@ import {
   searchCatalog,
   updateBanner,
   updateEnquiry,
+  addCustomWorkTags,
+  removeCustomWorkTag,
+  updateGearList,
   updateGearProduct,
   updateMerchOrder,
   updateMerchProduct,
@@ -68,6 +71,7 @@ import {
 } from "./session";
 import { checkPaymentOtp, issuePaymentOtp, type OtpRequestResult } from "./payment-otp";
 import { verifyAdminSession } from "./dal";
+import { BASE_WORK_TAGS, normalizeTag } from "../work-tags";
 
 export async function submitOrderRequest(input: {
   customerName: string;
@@ -427,7 +431,8 @@ export async function savePortfolioProjectAction(formData: FormData): Promise<Ac
     const year = String(formData.get("year") || "").trim();
     const orientation = String(formData.get("orientation") || "landscape") as WorkItem["orientation"];
     const embedUrl = String(formData.get("embedUrl") || "").trim();
-    const tags = formData.getAll("tags").map((t) => String(t).trim().toUpperCase()).filter(Boolean);
+    const tags = formData.getAll("tags").map((t) => normalizeTag(String(t))).filter(Boolean);
+    const newTags = formData.getAll("newTags").map((t) => normalizeTag(String(t))).filter(Boolean);
     const isEnabled = formData.get("isEnabled") === "on";
     const file = formData.get("image") as File | null;
 
@@ -450,11 +455,19 @@ export async function savePortfolioProjectAction(formData: FormData): Promise<Ac
       newId = created.id;
     }
 
+    await addCustomWorkTags(newTags.filter((t) => !(BASE_WORK_TAGS as readonly string[]).includes(t)));
+
     revalidateCatalog();
     return { ok: true, id: newId };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Something went wrong." };
   }
+}
+
+export async function deleteWorkTagAction(tag: string): Promise<void> {
+  await verifyAdminSession();
+  await removeCustomWorkTag(tag);
+  revalidateCatalog();
 }
 
 export async function deletePortfolioProjectAction(id: string): Promise<void> {
@@ -714,6 +727,30 @@ export async function updatePaymentSettingsAction(formData: FormData): Promise<A
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Something went wrong." };
   }
+}
+
+export async function saveGearListAction(formData: FormData): Promise<ActionResult> {
+  await verifyAdminSession();
+  try {
+    const file = formData.get("gearList") as File | null;
+    if (!file || file.size === 0) return { ok: false, error: "Choose a PDF to upload first." };
+    const url = await saveUploadedPdf(file, "gear-list");
+    await updateGearList({ url, meta: { name: file.name, size: file.size, updatedAt: new Date().toISOString() } });
+    revalidatePath("/");
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Something went wrong." };
+  }
+}
+
+/** Removes the gear list: the link disappears from the home page until a new PDF is uploaded. */
+export async function removeGearListAction(): Promise<ActionResult> {
+  await verifyAdminSession();
+  await updateGearList(null);
+  revalidatePath("/");
+  revalidatePath("/admin/settings");
+  return { ok: true };
 }
 
 export async function updateNotificationSettingsAction(formData: FormData): Promise<ActionResult> {

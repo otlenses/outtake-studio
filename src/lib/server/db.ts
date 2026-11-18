@@ -152,12 +152,20 @@ export type NotificationSettings = {
   pushEnabled: boolean;
 };
 
+export type GearListMeta = { name: string; size: number; updatedAt: string };
+
 export type SiteSettings = {
   banners: {
     home: BannerContent;
     rental: BannerContent;
   };
   notifications: NotificationSettings;
+  /** Rental gear list PDF: unset = the bundled /Gear-List.pdf, "" = removed (no link on the site), otherwise the uploaded file */
+  gearListUrl?: string | null;
+  /** Details of the uploaded file, shown in the admin */
+  gearListMeta?: GearListMeta | null;
+  /** Portfolio tags the client added beyond the built-in ones (see lib/work-tags.ts) */
+  customWorkTags?: string[];
 };
 
 type DbShape = {
@@ -734,9 +742,9 @@ export async function saveUploadedImage(
 // Vercel rejects request bodies over 4.5 MB, so a bigger PDF could never reach the server anyway.
 export const MAX_PDF_BYTES = 4 * 1024 * 1024;
 
-export async function saveUploadedPdf(file: File, folder: "motion-control"): Promise<string> {
+export async function saveUploadedPdf(file: File, folder: "motion-control" | "gear-list"): Promise<string> {
   if (!file || file.size === 0) throw new Error("No PDF was uploaded.");
-  if (file.type !== "application/pdf") throw new Error("The rate card must be a PDF file.");
+  if (file.type !== "application/pdf") throw new Error("The file must be a PDF.");
   if (file.size > MAX_PDF_BYTES) throw new Error("The PDF must be smaller than 4MB. Please compress it and try again.");
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -1133,6 +1141,31 @@ export async function updateBanner(
   Object.assign(db.siteSettings.banners[page], patch);
   await writeDb(db);
   return db.siteSettings.banners[page];
+}
+
+export async function addCustomWorkTags(tags: string[]): Promise<void> {
+  if (tags.length === 0) return;
+  const db = await ensureDb();
+  const current = db.siteSettings.customWorkTags ?? [];
+  const next = [...current, ...tags.filter((t) => !current.includes(t))];
+  if (next.length === current.length) return;
+  db.siteSettings.customWorkTags = next;
+  await writeDb(db);
+}
+
+/** Deletes a custom tag from the list and from every project that carries it. */
+export async function removeCustomWorkTag(tag: string): Promise<void> {
+  const db = await ensureDb();
+  db.siteSettings.customWorkTags = (db.siteSettings.customWorkTags ?? []).filter((t) => t !== tag);
+  for (const p of db.portfolioProjects) p.tags = p.tags.filter((t) => t !== tag);
+  await writeDb(db);
+}
+
+export async function updateGearList(file: { url: string; meta: GearListMeta } | null): Promise<void> {
+  const db = await ensureDb();
+  db.siteSettings.gearListUrl = file?.url ?? "";
+  db.siteSettings.gearListMeta = file?.meta ?? null;
+  await writeDb(db);
 }
 
 export async function updateNotificationSettings(

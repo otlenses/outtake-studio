@@ -2,10 +2,10 @@ import Nav from "@/components/Nav";
 import CartDrawer from "@/components/CartDrawer";
 import OurWork from "@/components/OurWork";
 import Footer from "@/components/Footer";
-import { listPortfolioProjects } from "@/lib/server/db";
+import { getSiteSettings, listPortfolioProjects } from "@/lib/server/db";
 
 export default async function OurWorkPage() {
-  const allItems = await listPortfolioProjects();
+  const [allItems, siteSettings] = await Promise.all([listPortfolioProjects(), getSiteSettings()]);
   const items = allItems.filter((p) => p.isEnabled);
 
   return (
@@ -13,7 +13,7 @@ export default async function OurWorkPage() {
       <Nav />
       <CartDrawer />
       <main className="flex flex-1 flex-col pt-[62px]">
-        <OurWork items={items} />
+        <OurWork items={items} customTags={siteSettings.customWorkTags ?? []} />
       </main>
       <Footer />
     </div>
