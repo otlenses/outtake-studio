@@ -12,13 +12,25 @@ export default function AboutIntro() {
           text="About Us"
           className="page-title font-display text-3xl font-black tracking-tight md:text-4xl"
         />
-        <p className="mt-5 max-w-2xl text-sm text-ash md:text-base">
-          Out Take Studio is a Kuala Lumpur-based production house and camera
-          rental house. We partner with brands, agencies, and fellow
-          filmmakers to bring commercial, corporate, and narrative work to
-          life — backed by a professionally maintained fleet of cinema
-          cameras, glass, and lighting.
-        </p>
+        <h2 className="mt-6 font-display text-lg font-bold tracking-tight md:text-xl">
+          Driven by Creativity. Built on Experience.
+        </h2>
+        <div className="mt-4 flex max-w-2xl flex-col gap-4 text-sm text-ash md:text-base">
+          <p>
+            Out Take Studio is a Kuala Lumpur-based cinematography and equipment rental company, bringing together
+            creative expertise, professional filmmaking equipment, and technical solutions under one roof.
+          </p>
+          <p>
+            Founded with a passion for visual storytelling, we specialise in cinematography, equipment rental,
+            technical support, and robotic motion control systems.
+          </p>
+          <p>
+            With hands-on experience across commercials, music videos, and feature films, we understand the
+            creative and technical demands of filmmaking. Our goal is simple: to provide filmmakers and production
+            teams with the right tools, expertise, and support to bring their vision to life.
+          </p>
+          <p>We believe great cinematography is a balance of creativity, technology, and collaboration.</p>
+        </div>
       </ScrollReveal>
     </section>
   );

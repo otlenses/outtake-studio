@@ -1,81 +1,120 @@
-"use client";
-
+import Image from "next/image";
+import Link from "next/link";
 import AnimatedHeading from "./AnimatedHeading";
-import { useState } from "react";
-import { services } from "@/lib/data";
 import ScrollReveal from "./ScrollReveal";
 
-export default function Services() {
-  const [openCode, setOpenCode] = useState<string | null>(null);
+type Service = {
+  code: string;
+  title: string;
+  paragraphs: React.ReactNode[];
+  image: { src: string; width: number; height: number; alt: string };
+  link: { label: string; href: string; external?: boolean };
+};
 
+const SERVICES: Service[] = [
+  {
+    code: "01",
+    title: "Technical Support",
+    paragraphs: [
+      "More than just equipment, we provide the technical knowledge and hands-on support needed to keep productions running smoothly.",
+      "From camera configurations and specialised rigging to workflow planning and on-set troubleshooting, our team works closely with filmmakers and production crews to develop practical solutions for their creative and technical needs.",
+      "Our focus is on making technology work for the production, allowing filmmakers to concentrate on what matters most - crafting images that serve the story.",
+    ],
+    image: { src: "/about/technical-support.jpg", width: 1600, height: 1200, alt: "Camera rig inside a vehicle with monitors and wireless focus controls" },
+    link: { label: "Talk to our team", href: "/contact" },
+  },
+  {
+    code: "02",
+    title: "Equipment Rental",
+    paragraphs: [
+      <>
+        Through <strong className="font-bold text-ink">Out Take Lenses</strong>, we specialise in professional cinema
+        camera equipment, with a particular focus on our extensive collection of cinema lenses.
+      </>,
+      "From modern cinema primes and zooms to anamorphic, vintage, and specialty optics, our diverse lens collection offers filmmakers a wide range of creative possibilities, each with its own unique visual characteristics.",
+      "Alongside our lenses, we provide professional cinema cameras, camera support systems, and essential accessories to meet the demands of different productions.",
+      "Every piece of equipment is carefully selected from a cinematographer's perspective, with an emphasis on image quality, versatility, and reliability on set.",
+    ],
+    image: { src: "/about/equipment-rental.jpg", width: 1600, height: 1200, alt: "ARRI cinema camera with a Fujinon zoom lens on a tripod" },
+    link: { label: "@ot.lenses on Instagram", href: "https://www.instagram.com/ot.lenses", external: true },
+  },
+  {
+    code: "03",
+    title: "Motion Control",
+    paragraphs: [
+      "Through Black Illusion, we provide robotic motion control solutions for productions that demand precision, consistency, and creative freedom.",
+      "Our motion control systems enable highly accurate and repeatable camera movements, opening up possibilities for complex camera choreography, high-speed cinematography, product commercials, and visual effects.",
+      "From creative planning to technical execution, we work closely with directors, cinematographers, and production teams to achieve camera movements that go beyond conventional filmmaking techniques.",
+    ],
+    image: { src: "/about/motion-control.jpg", width: 1080, height: 809, alt: "Robotic motion control arm filming a car in a studio" },
+    link: { label: "@blackillusion on Instagram", href: "https://www.instagram.com/blackillusion", external: true },
+  },
+  {
+    code: "04",
+    title: "Cinematography",
+    paragraphs: [
+      "Led by cinematographer Oscar Tong, we provide freelance Director of Photography services for commercials, music videos, short films, and feature films.",
+      "We approach every project with an emphasis on visual storytelling, combining lighting, composition, colour, and camera movement to create imagery that supports the director's vision.",
+      "From early creative discussions and visual development to principal photography, we bring together artistic sensibility and technical expertise to translate ideas into compelling images.",
+    ],
+    image: { src: "/about/cinematography.jpg", width: 1600, height: 1600, alt: "Music video frame with the matching lighting diagram" },
+    link: { label: "@oscartongdp on Instagram", href: "https://www.instagram.com/oscartongdp", external: true },
+  },
+];
+
+export default function Services() {
   return (
     <section id="services" className="bg-paper px-[max(1.5rem,4vw)] pb-20 pt-14 md:pb-28 md:pt-20">
       <div className="mx-auto">
-        <div className="mb-12 flex items-end justify-between gap-6">
-          <AnimatedHeading
-            as="h2"
-            text="Our Services"
-            className="page-title font-display text-3xl font-black tracking-tight md:text-4xl"
-          />
-          <p className="hidden max-w-xs text-right font-mono text-xs tracking-[0.04em] text-ash md:block">
-            From concept to colour — production, imaging, and gear.
-          </p>
-        </div>
+        <AnimatedHeading
+          as="h2"
+          text="Our Services"
+          className="mb-12 page-title font-display text-3xl font-black tracking-tight md:text-4xl"
+        />
 
-        <div className="divide-y divide-ash/25 border-t border-b border-ash/25">
-          {services.map((service, i) => {
-            const isOpen = openCode === service.code;
-            return (
-              <ScrollReveal key={service.code} delay={i * 80}>
-                <button
-                  type="button"
-                  onClick={() => setOpenCode(isOpen ? null : service.code)}
-                  aria-expanded={isOpen}
-                  className="group block w-full py-6 text-left sm:py-7"
-                >
-                  <span className="flex w-full items-center gap-4 sm:gap-8">
-                    <span className="font-mono text-xs text-ash transition-colors group-hover:text-signal">
-                      {service.code}
-                    </span>
-                    <h3 className="font-display text-xl font-bold tracking-tight transition-colors group-hover:text-signal md:text-2xl">
-                      {service.title}
-                    </h3>
-                    <span
-                      aria-hidden
-                      className={`ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-ash/40 text-ink transition-all duration-300 group-hover:border-signal group-hover:text-signal ${
-                        isOpen ? "rotate-45" : ""
-                      }`}
-                    >
-                      <PlusIcon />
-                    </span>
-                  </span>
-                  <span className="mt-2 block text-sm text-ash transition-colors group-hover:text-ink sm:ml-12 sm:max-w-md">
-                    <span className={isOpen ? "hidden" : "line-clamp-1"}>
-                      {service.details}
-                    </span>
-                    <span
-                      className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-                        isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                      }`}
-                    >
-                      <span className="overflow-hidden">{service.details}</span>
-                    </span>
-                  </span>
-                </button>
-              </ScrollReveal>
-            );
-          })}
+        <div className="divide-y divide-ash/25 border-t border-ash/25">
+          {SERVICES.map((service, i) => (
+            <ScrollReveal key={service.code} className="py-10 md:py-14">
+              <div className="grid items-center gap-8 md:grid-cols-12 md:gap-12">
+                <div className={`md:col-span-5 ${i % 2 === 1 ? "md:order-2" : ""}`}>
+                  <Image
+                    src={service.image.src}
+                    width={service.image.width}
+                    height={service.image.height}
+                    alt={service.image.alt}
+                    sizes="(min-width: 768px) 40vw, 100vw"
+                    className="h-auto w-full"
+                  />
+                </div>
+                <div className={`md:col-span-7 ${i % 2 === 1 ? "md:order-1" : ""}`}>
+                  <p className="font-mono text-xs text-ash">{service.code}</p>
+                  <h3 className="mt-2 font-display text-2xl font-bold tracking-tight md:text-3xl">{service.title}</h3>
+                  <div className="mt-5 flex max-w-xl flex-col gap-4 text-sm text-ash md:text-base">
+                    {service.paragraphs.map((p, j) => (
+                      <p key={j}>{p}</p>
+                    ))}
+                  </div>
+                  <ServiceLink {...service.link} />
+                </div>
+              </div>
+            </ScrollReveal>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-function PlusIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
+function ServiceLink({ label, href, external }: Service["link"]) {
+  const className =
+    "mt-6 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-ink px-5 py-2.5 font-mono text-xs font-semibold tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-white";
+  return external ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+      {label} <span aria-hidden>→</span>
+    </a>
+  ) : (
+    <Link href={href} className={className}>
+      {label} <span aria-hidden>→</span>
+    </Link>
   );
 }

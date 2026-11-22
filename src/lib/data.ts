@@ -33,44 +33,6 @@ export function getMerchGallery(item: MerchItem): string[] {
   return item.images && item.images.length > 0 ? item.images : [item.image];
 }
 
-export const services = [
-  {
-    code: "01",
-    title: "Commercial Videography",
-    blurb: "Brand films and ad campaigns shot to perform across broadcast and social.",
-    details:
-      "From concept development through final delivery, we produce commercial films built to perform across broadcast, streaming, and paid social. Our team handles casting, locations, and full crew logistics, with a colour and sound finish tailored to each platform's spec.",
-  },
-  {
-    code: "02",
-    title: "Corporate Videography",
-    blurb: "Culture films, internal comms, and executive interviews with a polished, honest tone.",
-    details:
-      "We help companies tell their own story — culture and recruitment films, internal communications, town halls, and executive interviews — shot with a documentary sensibility and finished to a broadcast-grade polish that still feels human.",
-  },
-  {
-    code: "03",
-    title: "Photography + Digital Imaging",
-    blurb: "Editorial, product, and campaign stills with full retouch and colour pipeline.",
-    details:
-      "Our stills team covers editorial, product, and campaign photography with an in-house retouch and colour pipeline, so every image ships consistent with your brand guidelines and ready for print or digital use straight out of delivery.",
-  },
-  {
-    code: "04",
-    title: "Cinematography",
-    blurb: "DP services for music videos, features, and narrative work — camera to colour.",
-    details:
-      "We provide dedicated DP services for music videos, short and feature films, and narrative commercial work — from camera and lighting design on set through to the final colour grade, keeping one consistent creative eye across the whole image pipeline.",
-  },
-  {
-    code: "05",
-    title: "Equipment Rental",
-    blurb: "Cinema cameras, glass, lighting, and grip — professionally maintained, ready to ship.",
-    details:
-      "Our rental floor stocks cinema camera bodies, cine and photo lenses, lighting, and grip — every unit professionally serviced and calibrated between bookings. Browse the full catalogue or talk to us about a custom package for your next shoot.",
-  },
-];
-
 export type WorkItem = {
   id: string;
   title: string;
