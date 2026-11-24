@@ -145,7 +145,10 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
   const hasFilters =
     searchQuery.trim().length > 0 || selectedBrands.size > 0 || selectedCategories.size > 0 || newOnly;
 
-  const activeFilterCount = selectedBrands.size + selectedCategories.size + (newOnly ? 1 : 0);
+  // Category lives in the mobile tab bar, so it isn't counted on the Filter button badge.
+  // On phones the category lives in the tab bar, so the chip row only shows for other filters.
+  const mobileChipsNeeded = searchQuery.trim().length > 0 || selectedBrands.size > 0 || newOnly;
+  const activeFilterCount = selectedBrands.size + (newOnly ? 1 : 0);
 
   const eraseAll = () => {
     setSearchQuery("");
@@ -165,7 +168,6 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
 
   const resetDraft = () => {
     setDraftBrands(new Set());
-    setDraftCategories(new Set());
     setDraftNewOnly(false);
   };
 
@@ -253,12 +255,46 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
             )}
           </button>
         </div>
+        {categories.length > 1 && (
+          <div className="no-scrollbar -mx-1 mt-5 flex gap-1 overflow-x-auto border-b border-ash/20 px-1">
+            {["ALL", ...categories].map((c) => {
+              const active = c === "ALL" ? selectedCategories.size === 0 : selectedCategories.has(c) && selectedCategories.size === 1;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setSelectedCategories(c === "ALL" ? new Set() : new Set([c]))}
+                  aria-pressed={active}
+                  className={`-mb-px shrink-0 border-b-2 px-3 py-3 font-mono text-xs uppercase tracking-[0.16em] transition-colors ${
+                    active ? "border-signal text-ink" : "border-transparent text-ash"
+                  }`}
+                >
+                  {c === "ALL" ? "All" : toTitleCase(c)}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <p className="mb-6 mt-5 text-xs text-ash">{filtered.length} items</p>
       </div>
 
       <div className="flex flex-col gap-10 md:flex-row md:items-start md:gap-12">
         {/* Sidebar — desktop only; mobile uses the Filter sheet instead */}
         <aside className="hidden shrink-0 md:sticky md:top-20 md:block md:w-56">
+          <FilterGroup title="Category">
+            <div className="flex flex-col gap-2.5">
+              {categories.map((cat) => (
+                <Checkbox
+                  key={cat}
+                  label={CATEGORY_LABELS[cat] ?? toTitleCase(cat)}
+                  count={categoryCounts.get(cat) ?? 0}
+                  checked={selectedCategories.has(cat)}
+                  onChange={() => toggle(selectedCategories, setSelectedCategories, cat)}
+                />
+              ))}
+            </div>
+          </FilterGroup>
+
           <FilterGroup title="Brand">
             <div className="flex flex-col gap-2.5">
               {visibleBrands.map((brand) => (
@@ -282,20 +318,6 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
             )}
           </FilterGroup>
 
-          <FilterGroup title="Category">
-            <div className="flex flex-col gap-2.5">
-              {categories.map((cat) => (
-                <Checkbox
-                  key={cat}
-                  label={CATEGORY_LABELS[cat] ?? toTitleCase(cat)}
-                  count={categoryCounts.get(cat) ?? 0}
-                  checked={selectedCategories.has(cat)}
-                  onChange={() => toggle(selectedCategories, setSelectedCategories, cat)}
-                />
-              ))}
-            </div>
-          </FilterGroup>
-
           <FilterGroup title="Status">
             <Checkbox
               label="New Arrival"
@@ -309,7 +331,7 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
         {/* Results */}
         <div className="min-w-0 flex-1">
           {hasFilters && (
-            <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-ash/20 pb-6">
+            <div className={`mb-6 flex-wrap items-center gap-2 border-b border-ash/20 pb-6 ${mobileChipsNeeded ? "flex" : "hidden md:flex"}`}>
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ash">
                 Selected:
               </span>
@@ -320,11 +342,12 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
                 <Chip key={`b-${b}`} label={b} onRemove={() => toggle(selectedBrands, setSelectedBrands, b)} />
               ))}
               {[...selectedCategories].map((c) => (
-                <Chip
-                  key={`c-${c}`}
-                  label={CATEGORY_LABELS[c] ?? toTitleCase(c)}
-                  onRemove={() => toggle(selectedCategories, setSelectedCategories, c)}
-                />
+                <span key={`c-${c}`} className="hidden md:inline-flex">
+                  <Chip
+                    label={CATEGORY_LABELS[c] ?? toTitleCase(c)}
+                    onRemove={() => toggle(selectedCategories, setSelectedCategories, c)}
+                  />
+                </span>
               ))}
               {newOnly && <Chip label="New Arrival" onRemove={() => setNewOnly(false)} />}
               <button
@@ -466,6 +489,7 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
             )}
           </FilterGroup>
 
+          {/* Category is temporarily hidden here — mobile uses the category tab bar above the list instead.
           <FilterGroup title="Category">
             <div className="flex flex-col gap-2.5">
               {categories.map((cat) => (
@@ -479,6 +503,7 @@ export default function RentalCatalogue({ items }: { items: GearItem[] }) {
               ))}
             </div>
           </FilterGroup>
+          */}
 
           <FilterGroup title="Sort by">
             <div className="flex flex-col gap-2.5">
